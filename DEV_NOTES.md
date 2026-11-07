@@ -2,27 +2,35 @@
 
 ## Development summary
 
-**Goal:** Make the public, consent-based beacon fail conservatively on malformed numeric location readings and give truthful failure diagnostics without changing its Shortcuts workflow or storage format.
+**Current goal:** Refuse stale cached iOS fixes before generating an ostensibly current emergency check-in. Pythonista documents `get_location()` as the **most recently obtained** position, including its own `timestamp`; this is not necessarily a newly acquired fix. The deliverable is a conservative sensor-time check at ingestion, preserving the existing packet and Shortcuts interface. Target: next unreleased maintenance patch.
 
-**Integration:** [PR #1](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/1) contains the implementation and these notes. Its GitHub state is authoritative for whether the change has been merged; the changes were proposed for review on 7 November 2026.
+**Integration:** Earlier finite-reading/diagnostic repair [PR #1](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/1) was merged at `0c9a18f`. The freshness correction is being developed on `noe/portfolio-beacon-fresh-fix`; treat it as **proposed only** until the new PR's GitHub merge status is observed.
 
-**Validation:** On corrected source revision `4258741fd886b9718aba79f9717e095bba155fdd`, [GitHub Actions run 42381511923](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42381511923) passed five synthetic `unittest` methods and syntax compilation on each of CPython 3.11 and 3.12. Before the fix, the same tests produced 14 failed assertions on each version in [run 42381467922](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42381467922). These are source-level checks only; later documentation revisions are not independently certified by that earlier run. Final PR and merged-main checks, if any, belong in the PR evidence.
+**Validation:** Four new device-free location-polling regression methods were added. The original implementation failed the new test suite on Python 3.11/3.12, [test-first CI run 42391217213](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42391217213). The final implementation candidate and its exact CI result are authoritative in the new PR; no device or Shortcuts integration test is claimed. Prior `safe_float` milestone had five passing synthetic checks at its [merged-main CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42381807855).
 
-**Publication:** Existing script header calls itself “Public Release Tutorial Build 1.1”; that is historical source metadata, **not evidence of a GitHub version tag or release**. The current maintenance change is an unreleased candidate until an actual publication event is observed.
+**Publication:** No verified GitHub release/tag for this maintenance correction. The original file's “Public Release Tutorial Build 1.1” header is historical, not proof of publication.
 
-**Meaningful changes:** `safe_float` rejects non-finite numbers, `safe_round` does not report them as usable numeric values, `valid_location` and `robust_fix` therefore reject poisoned samples, and failure messages no longer falsely attribute all failures to an invalid GPS fix. Tests use synthetic readings with iOS-specific imports unavailable.
+**Meaningful changes:** `fresh_location` compares the timestamp actually provided by iOS against sampling time; absent, non-finite, over-30-second-old or over-5-second-future fixes are not accepted. Existing numeric and position checks still apply. Refusal produces a failure reply instead of presenting an old position with a new collection timestamp. Original raw fix timestamp and on-device file layout stay intact.
 
-**Next selected steps:** (1) Validate this candidate on the final PR and, subject to current checks/permissions, merge the low-risk fix. (2) Consider a separate privacy-first option for opt-in log history only after reviewing Shortcuts compatibility and migration impact. (3) If suitable trusted device evidence becomes available, evaluate actual iPhone/Pythonista and Shortcuts delivery; do not require Dylan as a routine tester.
+**Next selected steps:** (1) Observe CI on the final changed revision, then merge only if all required checks and protections allow it. (2) Consider separate privacy-minimizing log-history controls after explicit compatibility examination. (3) Seek trusted iPhone/Shortcuts confirmation only when independently available; do not rely on Dylan for routine tests.
 
 ## Acceptance criteria and scope
 
-- Non-finite input (`NaN`, positive/negative infinity) must not pass numeric normalization or latitude/longitude/accuracy validation.
-- A valid synthetic sample must remain usable when mixed with non-finite data; numeric position and search-radius output must remain finite in the checked scenario.
-- Error messaging must not claim that location acquisition failed if arbitrary processing failed.
-- Tests must pass on the supported CI environments (CPython 3.11/3.12) without a device, network, live location, messaging or personal data.
-- Storage layout and public tutorial usage must not change incidentally.
+- A cached location older than 30 seconds, a missing/non-finite timestamp, or a timestamp more than 5 seconds in the future must not produce a normal check-in.
+- A fresh reading (including small positive clock skew) remains eligible; old and new samples are not combined.
+- Real `timestamp` values supplied by iOS remain in the raw sample; collection time must not masquerade as a location-fix time.
+- Retain the former finite-coordinate/accuracy and truthful-error-message tests.
+- Complete device-free tests on CPython 3.11/3.12. Do not change the packet structure, local-file layout or recipient/Shortcuts behaviour as part of this fix.
 
-The source targets Pythonista 3 / iOS as a **design intention**. Device compatibility, permission prompts, background Shortcuts execution, recipient delivery, timestamp freshness, actual sensor accuracy, GPS rescue-radius calibration and message confidentiality have **not** been verified. No end-to-end emergency reliability claim is appropriate.
+The source targets Pythonista 3 / iOS as a **design intention**. Actual location timestamp semantics in a running device, permission prompts, background Shortcuts execution, recipient delivery, clock changes, rescue-radius accuracy, and message confidentiality remain unverified. A fresh timestamp does not guarantee physical accuracy; it only excludes obviously stale provider samples.
+
+## Design decision — cached location time
+
+**Verified predecessor behaviour:** `collect_locations()` previously checked latitude, longitude and horizontal accuracy but did not inspect the sensor's `timestamp`. It stamped the time of polling in `_captured_unix_time` and later used the packet creation time in its message. This can make an old cached iOS position appear current. Pythonista's [documented `get_location()` contract](https://omz-software.com/pythonista/docs-3.4/py3/ios/location.html) says it returns the last-obtained position, including a `timestamp`, not necessarily a new update.
+
+**Alternatives:** Trust returned coordinates and warn only, use an unbounded wait for a new location, or bound source-age at each poll. Selected: reject missing/invalid and over-30-second-old fixes, tolerate up to 5 seconds of future clock skew, and continue the existing bounded polling for new samples. If none qualifies, fail closed with a recoverable error message. These thresholds are conservative policy choices, not a validated rescue specification; change them only after meaningful iOS evidence.
+
+**Trade-offs:** Users may receive a failure message indoors or when iOS supplies no new fix, rather than a potentially useful last-known position. The failure message never represents stale data as current; a future separate last-known-position mode would need conspicuous source-time labeling and explicit user choice. No packet schema or existing on-disk files are migrated.
 
 ## Design decision — finite-reading boundary
 
