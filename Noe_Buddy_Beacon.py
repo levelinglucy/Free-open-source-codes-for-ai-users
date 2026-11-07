@@ -374,20 +374,23 @@ def iso_utc():
 
 
 def safe_float(value, default=None):
+    """Return only finite numeric readings; NaN/inf must not become a position."""
     try:
         if value is None:
             return default
-        return float(value)
-    except Exception:
+        reading = float(value)
+        return reading if math.isfinite(reading) else default
+    except (TypeError, ValueError, OverflowError):
         return default
 
 
 def safe_round(value, digits=1, default="unknown"):
+    reading = safe_float(value)
+    if reading is None:
+        return default
     try:
-        if value is None:
-            return default
-        return round(float(value), digits)
-    except Exception:
+        return round(reading, digits)
+    except (TypeError, ValueError, OverflowError):
         return default
 
 
@@ -1290,7 +1293,7 @@ def make_failure_message(error_text):
 
     return (
         "{name} FAILED\n\n"
-        "The trusted check-in phrase was received, but the phone could not get a valid location fix.\n\n"
+        "The trusted check-in phrase was received, but the beacon could not prepare a reliable reply. A location or processing error may have occurred.\n\n"
         "Time local: {local}\n"
         "Time UTC: {utc}\n"
         "Battery: {battery}% ({battery_state})\n"
