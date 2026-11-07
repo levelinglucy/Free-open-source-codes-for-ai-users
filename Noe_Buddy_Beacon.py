@@ -322,6 +322,12 @@ SAMPLE_DELAY_SECONDS = 1.0
 # If a fix reaches this accuracy after a few samples, stop early.
 TARGET_ACCURACY_METRES = 8.0
 
+# Pythonista can return its last cached fix. Require a genuinely recent iOS
+# timestamp rather than calling an old position current. Small positive skew
+# allows ordinary clock rounding between the phone and the recorded fix.
+MAX_LOCATION_AGE_SECONDS = 30.0
+MAX_LOCATION_FUTURE_SKEW_SECONDS = 5.0
+
 # Reject very poor samples over this accuracy unless they are all we have.
 MAX_ACCEPTABLE_ACCURACY_METRES = 250.0
 
@@ -695,6 +701,22 @@ def valid_location(loc):
     return True
 
 
+def fresh_location(loc, observed_unix_time):
+    """Refuse old, missing or implausibly future iOS location timestamps.
+
+    A polling time is NOT a fix time: Pythonista's get_location() returns the
+    last location obtained by iOS, which may predate this run.
+    """
+    if not valid_location(loc):
+        return False
+    source_timestamp = safe_float(loc.get("timestamp"))
+    observed_unix_time = safe_float(observed_unix_time)
+    if source_timestamp is None or observed_unix_time is None:
+        return False
+    age_seconds = observed_unix_time - source_timestamp
+    return -MAX_LOCATION_FUTURE_SKEW_SECONDS <= age_seconds <= MAX_LOCATION_AGE_SECONDS
+
+
 def collect_locations():
     if location is None:
         raise RuntimeError("Pythonista location module unavailable.")
@@ -709,11 +731,12 @@ def collect_locations():
             time.sleep(SAMPLE_DELAY_SECONDS)
             raw_polls += 1
             loc = location.get_location()
+            observed_time = time.time()
 
-            if valid_location(loc):
+            if fresh_location(loc, observed_time):
                 loc = dict(loc)
                 loc["_captured_local"] = iso_local()
-                loc["_captured_unix_time"] = time.time()
+                loc["_captured_unix_time"] = observed_time
 
                 acc = safe_float(loc.get("horizontal_accuracy"), 999999.0)
                 if acc <= MAX_ACCEPTABLE_ACCURACY_METRES:
@@ -731,7 +754,7 @@ def collect_locations():
             pass
 
     if not samples:
-        raise RuntimeError("No valid location fix.")
+        raise RuntimeError("No fresh valid location fix (check location updates and permissions).")
 
     return samples, raw_polls
 
