@@ -4,6 +4,8 @@ No device, personal data, messaging, clipboard, network or GPS is used.
 """
 import importlib.util
 import math
+import json
+import tempfile
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -106,6 +108,75 @@ class BeaconSafetyTests(unittest.TestCase):
         samples, polls = self._collect_synthetic([reading], now=now)
         self.assertEqual(polls, 1)
         self.assertEqual(len(samples), 1)
+
+
+    def test_disabled_local_saving_creates_no_files_even_on_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            with mock.patch.object(beacon, "SAVE_LOCAL_FILES", False), \
+                 mock.patch.object(beacon.os.path, "expanduser", return_value=str(home)), \
+                 mock.patch.object(beacon, "build_packet", side_effect=RuntimeError("synthetic failure")), \
+                 mock.patch.object(beacon, "make_failure_message", return_value="FAILED"), \
+                 mock.patch.object(beacon, "output_message") as output:
+                beacon.main()
+            output.assert_called_once_with("FAILED")
+            self.assertFalse((home / beacon.SAVE_FOLDER_NAME).exists())
+
+    def test_disable_timestamped_history_keeps_only_latest_outputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
+                 mock.patch.object(beacon, "SAVE_TIMESTAMPED_HISTORY", False, create=True), \
+                 mock.patch.object(beacon.os.path, "expanduser", return_value=str(home)):
+                beacon.save_outputs("synthetic location", {"synthetic": True})
+            folder = home / beacon.SAVE_FOLDER_NAME
+            self.assertEqual((folder / "latest_buddy_beacon_message.txt").read_text(), "synthetic location")
+            self.assertEqual(json.loads(
+                (folder / "latest_buddy_beacon_packet.json").read_text()), {"synthetic": True})
+            self.assertEqual(sorted(p.name for p in folder.iterdir()), [
+                "latest_buddy_beacon_message.txt", "latest_buddy_beacon_packet.json"
+            ])
+
+    def test_timestamped_history_remains_available_for_compatibility(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
+                 mock.patch.object(beacon, "SAVE_TIMESTAMPED_HISTORY", True, create=True), \
+                 mock.patch.object(beacon.os.path, "expanduser", return_value=str(home)):
+                beacon.save_outputs("synthetic location", {"synthetic": True})
+            folder = home / beacon.SAVE_FOLDER_NAME
+            self.assertEqual(len(list(folder.glob("buddy_beacon_*.txt"))), 1)
+            self.assertEqual(len(list(folder.glob("buddy_beacon_*.json"))), 1)
+            self.assertTrue((folder / "latest_buddy_beacon_message.txt").is_file())
+            self.assertTrue((folder / "latest_buddy_beacon_packet.json").is_file())
+
+    def test_error_traceback_saving_requires_explicit_opt_in(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
+                 mock.patch.object(beacon, "SAVE_ERROR_TRACEBACK", False, create=True), \
+                 mock.patch.object(beacon.os.path, "expanduser", return_value=str(home)), \
+                 mock.patch.object(beacon, "build_packet", side_effect=RuntimeError("synthetic error")), \
+                 mock.patch.object(beacon, "make_failure_message", return_value="FAILED"), \
+                 mock.patch.object(beacon, "output_message"):
+                beacon.main()
+            folder = home / beacon.SAVE_FOLDER_NAME
+            self.assertEqual((folder / "latest_buddy_beacon_message.txt").read_text(), "FAILED")
+            self.assertFalse((folder / "latest_error_traceback.txt").exists())
+
+    def test_explicit_traceback_opt_in_preserves_diagnostics(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
+                 mock.patch.object(beacon, "SAVE_ERROR_TRACEBACK", True, create=True), \
+                 mock.patch.object(beacon.os.path, "expanduser", return_value=str(home)), \
+                 mock.patch.object(beacon, "build_packet", side_effect=RuntimeError("synthetic error")), \
+                 mock.patch.object(beacon, "make_failure_message", return_value="FAILED"), \
+                 mock.patch.object(beacon, "output_message"):
+                beacon.main()
+            folder = home / beacon.SAVE_FOLDER_NAME
+            self.assertIn("synthetic error", (folder / "latest_error_traceback.txt").read_text())
+
 
 
 if __name__ == "__main__":
