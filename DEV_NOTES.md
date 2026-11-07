@@ -2,17 +2,17 @@
 
 ## Development summary
 
-**Current goal:** Refuse stale cached iOS fixes before generating an ostensibly current emergency check-in. Pythonista documents `get_location()` as the **most recently obtained** position, including its own `timestamp`; this is not necessarily a newly acquired fix. The deliverable is a conservative sensor-time check at ingestion, preserving the existing packet and Shortcuts interface. Target: next unreleased maintenance patch.
+**Current goal:** Make beacon local-storage opt-outs truthful without breaking the default check-in and Shortcuts interface. On the previous source, `SAVE_LOCAL_FILES = False` still created an exception traceback file, while plaintext/JSON history accumulated without a latest-only option. Target: next unreleased privacy-maintenance patch. Support target remains Pythonista 3 / iOS (unverified) and tested CPython 3.11/3.12.
 
-**Integration:** Earlier finite-reading/diagnostic repair [PR #1](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/1) was merged at `0c9a18f`. The freshness correction is being developed on `noe/portfolio-beacon-fresh-fix`; treat it as **proposed only** until the new PR's GitHub merge status is observed.
+**Integration:** Sensor repairs [PR #1](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/1) and [PR #2](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/2) are merged; current baseline main `53bce316`. Privacy controls are being developed on `noe/portfolio-beacon-private-logs`; proposed until explicitly merged. Existing user data is not migrated or deleted.
 
-**Validation:** Four new device-free location-polling regression methods were added. The original implementation failed the new test suite on Python 3.11/3.12, [test-first CI run 42391217213](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42391217213). The final implementation candidate and its exact CI result are authoritative in the new PR; no device or Shortcuts integration test is claimed. Prior `safe_float` milestone had five passing synthetic checks at its [merged-main CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42381807855).
+**Validation:** Five new synthetic privacy tests include failure-path no-write, latest-only history, opt-in diagnostics and legacy history compatibility; the original source failed 3/14 checks per Python 3.11/3.12 at [test-first CI 42405585205](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42405585205). Exact repaired-source validation and integration state belong in the new PR, not inferred here. Earlier stale-fix and numeric tests remain in the same suite. No iPhone, real location, clipboard or Shortcuts integration tests are claimed.
 
 **Publication:** No verified GitHub release/tag for this maintenance correction. The original file's “Public Release Tutorial Build 1.1” header is historical, not proof of publication.
 
-**Meaningful changes:** `fresh_location` compares the timestamp actually provided by iOS against sampling time; absent, non-finite, over-30-second-old or over-5-second-future fixes are not accepted. Existing numeric and position checks still apply. Refusal produces a failure reply instead of presenting an old position with a new collection timestamp. Original raw fix timestamp and on-device file layout stay intact.
+**Meaningful proposed change:** `SAVE_LOCAL_FILES` governs all writes, even traceback capture. `SAVE_TIMESTAMPED_HISTORY` defaults to True for existing tutorial behaviour but may be set False to retain only latest reports. New `SAVE_ERROR_TRACEBACK` defaults to False, with explicit opt-in while local saving is enabled. Clipboard and Shortcuts output are unaffected, and existing files are never removed. Earlier sensor freshness and numeric repairs stay intact.
 
-**Next selected steps:** (1) Observe CI on the final changed revision, then merge only if all required checks and protections allow it. (2) Consider separate privacy-minimizing log-history controls after explicit compatibility examination. (3) Seek trusted iPhone/Shortcuts confirmation only when independently available; do not rely on Dylan for routine tests.
+**Next selected steps:** (1) Validate the exact proposed privacy change on CPython 3.11/3.12 and review its diff. (2) Merge a low-risk PR only if checks, branch status and protections allow. (3) Revisit real Pythonista behaviour only with suitable evidence; do not ask Dylan to operate routine tests.
 
 ## Acceptance criteria and scope
 
@@ -40,7 +40,15 @@ The source targets Pythonista 3 / iOS as a **design intention**. Actual location
 
 **Diagnostic correction:** Previously every uncaught `main()` exception generated text saying the phone could not obtain a valid location. The replacement explicitly allows a processing failure. A more detailed stage-coded diagnostic can be reconsidered if actual device logs show it would aid troubleshooting without leaking sensitive internals.
 
-**Privacy and safety:** The existing defaults retain timestamped plain-text location logs and clipboard output for tutorial compatibility; these are potentially sensitive. Documented clearly in the README and at the source settings. Do not silently alter existing on-device data or claim privacy certification.
+**Privacy and safety:** Timestamped plain-text history and clipboard output remain enabled by default for tutorial compatibility. New opt-outs let the user disable dated history or all local files independently of clipboard output. Detailed tracebacks are opt-in because failures can contain sensitive context. Existing saved records are not deleted; no privacy certification is implied.
+
+## Design decision — privacy controls and error paths
+
+**Confirmed predecessor:** normal output respected `SAVE_LOCAL_FILES = False`, but the `main()` exception handler unconditionally called `ensure_save_folder()` and wrote `latest_error_traceback.txt`. This violates the user's selected no-local-save setting. Normal output also wrote unlimited timestamped reports without offering a latest-only mode; tracebacks contained detailed exception context by default.
+
+**Options:** disable all saving by default (would break existing tutorial workflows), silently delete older files (would risk data loss), or provide explicit independent controls. **Decision:** keep legacy success-path defaults, make the master local-file switch authoritative even on errors, add a latest-only option while retaining history by default, and require opt-in for traceback files. The Shortcuts print and clipboard paths are unchanged. Previously saved files are preserved, not cleansed. Manual removal remains the user's choice.
+
+**Acceptance:** synthetic tests must establish no folder on failures when saving is off; the latest-only mode must save only latest files; legacy history remains possible; tracebacks require both explicit opt-in and local saving. No real-device validation or automatic encryption/retention claim is made.
 
 ## Test commands
 

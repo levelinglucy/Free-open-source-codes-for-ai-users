@@ -337,8 +337,16 @@ USE_REVERSE_GEOCODE = True
 # Include a short motion stillness estimate, if Pythonista can access motion sensors.
 USE_MOTION_SNAPSHOT = True
 
-# Save latest message and JSON packet locally in Pythonista Documents.
+# Master switch for all local saving, including failure diagnostics.
 SAVE_LOCAL_FILES = True
+
+# Keep historical per-run plaintext and JSON reports. False keeps only latest
+# files when SAVE_LOCAL_FILES is True; existing history is never deleted.
+SAVE_TIMESTAMPED_HISTORY = True
+
+# Detailed tracebacks can expose sensitive device data; opt in only for
+# deliberate troubleshooting. Also requires SAVE_LOCAL_FILES = True.
+SAVE_ERROR_TRACEBACK = False
 
 # Local save folder under Pythonista Documents.
 SAVE_FOLDER_NAME = "Noe_Buddy_Beacon"
@@ -1357,19 +1365,21 @@ def save_outputs(message, packet=None):
         with open(latest_txt, "w", encoding="utf-8") as f:
             f.write(message)
 
-        stamp = now_local_dt().strftime("%Y%m%d_%H%M%S")
-        stamped_txt = os.path.join(folder, "buddy_beacon_{}.txt".format(stamp))
-        with open(stamped_txt, "w", encoding="utf-8") as f:
-            f.write(message)
+        stamp = now_local_dt().strftime("%Y%m%d_%H%M%S") if SAVE_TIMESTAMPED_HISTORY else None
+        if stamp is not None:
+            stamped_txt = os.path.join(folder, "buddy_beacon_{}.txt".format(stamp))
+            with open(stamped_txt, "w", encoding="utf-8") as f:
+                f.write(message)
 
         if packet is not None:
             latest_json = os.path.join(folder, "latest_buddy_beacon_packet.json")
             with open(latest_json, "w", encoding="utf-8") as f:
                 json.dump(packet, f, indent=2, sort_keys=True)
 
-            stamped_json = os.path.join(folder, "buddy_beacon_{}.json".format(stamp))
-            with open(stamped_json, "w", encoding="utf-8") as f:
-                json.dump(packet, f, indent=2, sort_keys=True)
+            if stamp is not None:
+                stamped_json = os.path.join(folder, "buddy_beacon_{}.json".format(stamp))
+                with open(stamped_json, "w", encoding="utf-8") as f:
+                    json.dump(packet, f, indent=2, sort_keys=True)
 
     except Exception:
         # Do not break the beacon just because saving failed.
@@ -1405,13 +1415,15 @@ def main():
         error_text = "{}".format(e)
         failure = make_failure_message(error_text)
 
-        # Save traceback locally if possible.
-        try:
-            folder = ensure_save_folder()
-            with open(os.path.join(folder, "latest_error_traceback.txt"), "w", encoding="utf-8") as f:
-                f.write(traceback.format_exc())
-        except Exception:
-            pass
+        # Opt-in diagnostics only. Respect the master no-local-files switch
+        # even on failures; never create a folder just to save a traceback.
+        if SAVE_LOCAL_FILES and SAVE_ERROR_TRACEBACK:
+            try:
+                folder = ensure_save_folder()
+                with open(os.path.join(folder, "latest_error_traceback.txt"), "w", encoding="utf-8") as f:
+                    f.write(traceback.format_exc())
+            except Exception:
+                pass
 
         save_outputs(failure, None)
         output_message(failure)

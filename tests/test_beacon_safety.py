@@ -4,6 +4,8 @@ No device, personal data, messaging, clipboard, network or GPS is used.
 """
 import importlib.util
 import math
+import json
+import tempfile
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -109,7 +111,6 @@ class BeaconSafetyTests(unittest.TestCase):
 
 
     def test_disabled_local_saving_creates_no_files_even_on_failure(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             with mock.patch.object(beacon, "SAVE_LOCAL_FILES", False), \
@@ -122,7 +123,6 @@ class BeaconSafetyTests(unittest.TestCase):
             self.assertFalse((home / beacon.SAVE_FOLDER_NAME).exists())
 
     def test_disable_timestamped_history_keeps_only_latest_outputs(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
@@ -131,14 +131,13 @@ class BeaconSafetyTests(unittest.TestCase):
                 beacon.save_outputs("synthetic location", {"synthetic": True})
             folder = home / beacon.SAVE_FOLDER_NAME
             self.assertEqual((folder / "latest_buddy_beacon_message.txt").read_text(), "synthetic location")
-            self.assertEqual(__import__("json").loads(
+            self.assertEqual(json.loads(
                 (folder / "latest_buddy_beacon_packet.json").read_text()), {"synthetic": True})
             self.assertEqual(sorted(p.name for p in folder.iterdir()), [
                 "latest_buddy_beacon_message.txt", "latest_buddy_beacon_packet.json"
             ])
 
     def test_timestamped_history_remains_available_for_compatibility(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
@@ -152,7 +151,6 @@ class BeaconSafetyTests(unittest.TestCase):
             self.assertTrue((folder / "latest_buddy_beacon_packet.json").is_file())
 
     def test_error_traceback_saving_requires_explicit_opt_in(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
@@ -167,7 +165,6 @@ class BeaconSafetyTests(unittest.TestCase):
             self.assertFalse((folder / "latest_error_traceback.txt").exists())
 
     def test_explicit_traceback_opt_in_preserves_diagnostics(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
