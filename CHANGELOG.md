@@ -2,6 +2,8 @@
 
 ## Unreleased — safety checks for the public beacon
 
+- Reject cached, missing-timestamp, non-finite and implausibly future-dated iOS location samples at the polling boundary; if no sufficiently recent fix arrives, send a failure message instead of a deceptively current location. Existing raw timestamps and storage formats remain unchanged.
+- Add four synthetic freshness regression tests, a conservative 30-second age/5-second skew policy and explanation of the trade-off that even useful old positions cannot be reported as fresh.
 - Reject `NaN` and infinite sensor values before they reach location validation, weighted coordinates or numeric presentation, preventing misleading non-finite check-in results.
 - Replace the failure reply's unconditional “no valid location fix” claim with wording that also covers processing errors; successful messages and the existing storage format remain unchanged.
 - Add five device-free, synthetic regression tests and Python 3.11/3.12 GitHub Actions validation, plus setup, privacy and limitations guidance in README and developer notes.
