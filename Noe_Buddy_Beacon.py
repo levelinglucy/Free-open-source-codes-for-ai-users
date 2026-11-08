@@ -189,7 +189,7 @@
 # Examples:
 #
 #   NOE CHECK IN 7391
-#   DYLAN BEACON WAKE 7391
+#   BUDDY BEACON WAKE 7391
 #   BUDDY BEACON PLEASE 7391
 #   SAFETY LANTERN 7391
 #
@@ -1255,7 +1255,7 @@ def make_human_message(packet):
 
     return (
         "{name}\n\n"
-        "Trusted check-in phrase received. This is an automatic location reply from Dylan's phone.\n\n"
+        "Automatic location check-in prepared on this phone. Trigger and recipient are controlled by Shortcuts.\n\n"
         "Nearest readable place/address:\n"
         "{place}\n\n"
         "Find me / my phone near:\n"
@@ -1324,7 +1324,7 @@ def make_failure_message(error_text):
 
     return (
         "{name} FAILED\n\n"
-        "The trusted check-in phrase was received, but the beacon could not prepare a reliable reply. A location or processing error may have occurred.\n\n"
+        "A check-in was attempted, but the beacon could not prepare a reliable reply. A location or processing error may have occurred.\n\n"
         "Time local: {local}\n"
         "Time UTC: {utc}\n"
         "Battery: {battery}% ({battery_state})\n"
