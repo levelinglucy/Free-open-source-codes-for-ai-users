@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Latest-file integrity
+
+- Pre-serialize each packet, then stage the latest text/JSON files beside their targets and replace each only after a complete write. An unsupported packet or failed replacement no longer truncates the previously complete destination; failed staging files are cleaned up. This is **per-file**, not transactional or power-loss durable, and prior successful JSON remains after a failure-only message.
+
 ### Timestamped history integrity
 
 - Preserve previous per-run local message/JSON reports when multiple check-ins share a wall-clock second: use exclusive archive creation and a matching suffixed stem on collisions. Existing archive names and latest-file compatibility remain; interruption-proof or atomic multi-file persistence is **not** claimed.

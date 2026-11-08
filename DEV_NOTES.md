@@ -2,26 +2,34 @@
 
 ## Development summary
 
-**Current goal:** Prevent repeated beacon check-ins within the same second from overwriting earlier timestamped local reports. Target: small unreleased history-integrity correction. Intended platform: Pythonista 3/iOS (unverified); automated validation targets CPython 3.11/3.12.
+**Current goal:** Preserve complete previously saved latest message/packet files if serialization or file replacement fails. Target: unreleased atomic-per-file integrity repair. Intended platform: Pythonista 3/iOS (not device-validated); CI targets CPython 3.11/3.12.
 
-**Integration:** Earlier sensor, privacy and message repairs [PRs #1–4](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pulls?q=is%3Apr+is%3Amerged) are merged. Baseline main for this change: `4c58d558`. Collision-safe archive writing is proposed on `noe/portfolio-beacon-history-collisions`, not yet integrated as of this branch's documentation. Existing latest-file, message, recipient, location and permission logic is unchanged.
+**Integration:** Baseline main `3d501ba` includes merged PRs #1–5 (finite sensor values, cached-fix checks, privacy controls, neutral replies and collision-safe archived history). The latest-file change is [PR #6](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/6); use the PR's actual state for integration, not a branch note as a claim of merge.
 
-**Validation:** A test-first [CI run 42524965803](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42524965803) reproduced both failures on each of Python 3.11/3.12: two saves in one second collapsed into one archived report; an earlier archive pair was overwritten. Exact candidate validation belongs in this branch's PR; the two preceding runs alone do not validate the repair.
+**Validation:** [Test-first branch CI 42529945672](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42529945672) reproduced three failures (22 tests total) on each Python 3.11/3.12. [Candidate CI 42530106583](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42530106583) passed 22/22 synthetic tests and compilation on each version at `2c5ae7e`. PR #6 owns subsequent exact-revision validation evidence; branch checks alone cannot establish a merged-main result.
 
-**Publication:** No observed GitHub release/tag for these maintenance changes; the source's historical “Public Release Tutorial Build 1.1” label does not prove a published release.
+**Publication:** No verified GitHub release/tag for these maintenance changes; the historical script's “Public Release Tutorial Build 1.1” label is not publication evidence.
 
-**Latest meaningful change:** New history entries use the original second-resolution names when available, appending an integer suffix only on collision. Exclusive creation prevents replacement of pre-existing archive entries, and paired text/JSON files share the chosen stem. An interrupted write can still leave a partial new entry, and the existing `latest_*` files are still overwritten in place; this patch is **not** a crash-safe or power-loss guarantee.
+**Latest meaningful change:** Serialize packet before touching any destination; stage each new `latest_*` file in the same folder and replace its filename only after the staged file is closed. Clean staged files on caught failures; preserve the previous complete file if replacement fails. The public Shortcuts message, default privacy switches, timestamped history naming and packet schema are unchanged.
 
-**Next selected steps:** (1) Validate exact candidate and inspect both Python-version logs; (2) merge only when current and permitted by required checks; (3) later assess latest-file crash safety or real-device behaviour if independent evidence warrants it.
+**Next selected steps:** (1) Confirm integration and exact merged-main checks via PR #6; (2) separately evaluate whether stale successful latest JSON should be explicitly marked when a later failure-only message is saved, without deleting historical records; (3) seek real-device/Shortcuts evidence only if it materially changes platform support.
 
 ## Acceptance criteria and scope
 
-- Two writes in the same wall-clock second must each retain their own archived text, and (when available) JSON, using one matching stem per run.
-- A pre-existing archived text/JSON pair must never be truncated or replaced by a new report. Keep the existing archive naming style for the first run and use suffixes only when needed.
-- Preserve `SAVE_LOCAL_FILES = False` (no file creation), `SAVE_TIMESTAMPED_HISTORY = False` (latest only), and Shortcuts print/clipboard behaviour.
-- Keep prior freshness, finite-reading and neutral-message safety tests passing, with 18/18 synthetic checks on each CPython 3.11/3.12 candidate. Do not change the location packet schema or recipient handling.
+- When `os.replace` fails, each affected `latest_*` destination retains the exact previous complete file, with failed staging files cleaned up.
+- Unsupported packet objects fail *before* the previous latest message or packet is modified. Both synthetic and normal updates stay readable.
+- Successful message and JSON saves preserve their existing filenames, JSON formatting, Shortcuts output and archive naming; local-saving privacy switches work as before.
+- Candidate and merged-main compilation and all 22 synthetic tests pass on CPython 3.11 and 3.12.
 
-The source targets Pythonista 3 / iOS as a **design intention**. Actual location timestamp semantics in a running device, permission prompts, background Shortcuts execution, recipient delivery, clock changes, rescue-radius accuracy, and message confidentiality remain unverified. A fresh timestamp does not guarantee physical accuracy; it only excludes obviously stale provider samples.
+**Limitations:** Latest message and packet are *two separate replaces*, not a transaction. A failure after publishing the message may leave a previous packet, and a failed check-in with `packet=None` intentionally does not erase a prior successful JSON packet; consumers must not mistake it for a same-check-in record. Crashes may leave a staging file and no directory `fsync` is performed; no power-loss, concurrent-writer, guaranteed disk durability or device-portability claim is justified. Archived pairs remain susceptible to partial writes on interruption. Pythonista runtime, iOS Shortcuts and actual SMS delivery have not been tested.
+
+## Design decision — stage latest files before replacement
+
+**Verified predecessor:** `save_outputs()` used `open("w")` on both latest outputs, immediately truncating the existing complete report. Failure-injection CI confirmed that an unsupported JSON packet could leave the message replaced and JSON truncated; tests also exercised both replacement failure points, unavailable to the predecessor because it never used atomic rename.
+
+**Alternatives:** Keep direct truncating writes (simple but loses prior data on errors), introduce a transactional bundle/manifest (safer cross-file semantics but breaks compatibility), or stage each file beside its target and `os.replace` after successful serialization and close (**chosen**). It is a bounded, compatible correctness improvement without changing on-disk filenames.
+
+**Trade-off:** A temporary file consumes extra short-lived space. Individual-file publication is atomic on supported local filesystem semantics, but two files can represent different runs if the second replace fails, and the previous JSON persists after a failure-only message. We avoid automatic deletion of older personal reports. `os.replace` availability and filesystem behaviour on Pythonista/iOS remain unverified. Stage-only residues after a process crash are not automatically purged. Revisit a transactional latest-pair format if real consumers need an inseparable pair and a migration path exists.
 
 ## Design decision — cached location time
 

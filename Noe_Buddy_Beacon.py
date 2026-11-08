@@ -278,6 +278,7 @@ import os
 import platform
 import sys
 import time
+import tempfile
 import traceback
 
 try:
@@ -1355,20 +1356,46 @@ def ensure_save_folder():
     return folder
 
 
+def _replace_latest_complete(path, text):
+    """Publish one complete latest file, leaving its predecessor on failure.
+
+    Staging must be on the same filesystem as the target for os.replace().
+    This is not an atomic transaction across message and packet files, nor
+    a power-loss durability promise.
+    """
+    staging_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=os.path.dirname(path),
+            prefix=".buddy_beacon_latest_", suffix=".tmp", delete=False
+        ) as staged:
+            staging_path = staged.name
+            staged.write(text)
+        os.replace(staging_path, path)
+        staging_path = None
+    finally:
+        if staging_path is not None:
+            try:
+                os.unlink(staging_path)
+            except FileNotFoundError:
+                pass
+
+
 def save_outputs(message, packet=None):
     if not SAVE_LOCAL_FILES:
         return
 
     try:
+        # Ensure an unsupported packet cannot replace an otherwise complete
+        # latest message or leave behind a truncated JSON record.
+        packet_json = json.dumps(packet, indent=2, sort_keys=True) if packet is not None else None
         folder = ensure_save_folder()
         latest_txt = os.path.join(folder, "latest_buddy_beacon_message.txt")
-        with open(latest_txt, "w", encoding="utf-8") as f:
-            f.write(message)
+        _replace_latest_complete(latest_txt, message)
 
-        if packet is not None:
+        if packet_json is not None:
             latest_json = os.path.join(folder, "latest_buddy_beacon_packet.json")
-            with open(latest_json, "w", encoding="utf-8") as f:
-                json.dump(packet, f, indent=2, sort_keys=True)
+            _replace_latest_complete(latest_json, packet_json)
 
         if SAVE_TIMESTAMPED_HISTORY:
             # Second-resolution names can collide on repeated Shortcuts runs.
