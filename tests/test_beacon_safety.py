@@ -179,5 +179,38 @@ class BeaconSafetyTests(unittest.TestCase):
 
 
 
+
+    def test_success_message_does_not_assert_owner_identity_or_shortcuts_authentication(self):
+        # Publicly reusable script: only Shortcuts knows its trigger and recipient.
+        packet = {
+            "find_me": {
+                "latitude_degrees": 54.25,
+                "longitude_degrees": -0.4,
+                "rescue_search_radius_metres": 8.0,
+                "quality_label": "good",
+                "latitude_dms": "54 N",
+                "longitude_dms": "0 W",
+            },
+            "location_quality": {
+                "best_reported_horizontal_accuracy_metres": 5.0,
+                "median_reported_horizontal_accuracy_metres": 6.0,
+                "samples_used": 1,
+                "samples_total": 1,
+            },
+            "phone_context": {"device": {}, "core_location_permission": {}},
+        }
+        message = beacon.make_human_message(packet)
+        self.assertIn("Automatic location check-in prepared", message)
+        self.assertNotIn("Dylan", message)
+        self.assertNotIn("Trusted check-in phrase received", message)
+
+    def test_failure_message_does_not_claim_trigger_was_verified(self):
+        with mock.patch.object(beacon, "get_device_context", return_value={}), \
+             mock.patch.object(beacon, "get_location_permission_context", return_value={}):
+            message = beacon.make_failure_message("synthetic failure")
+        self.assertIn("check-in was attempted", message)
+        self.assertNotIn("trusted check-in phrase was received", message.lower())
+
+
 if __name__ == "__main__":
     unittest.main()
