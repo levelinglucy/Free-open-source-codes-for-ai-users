@@ -4,15 +4,15 @@
 
 **Current goal:** Preserve complete previously saved latest message/packet files if serialization or file replacement fails. Target: unreleased atomic-per-file integrity repair. Intended platform: Pythonista 3/iOS (not device-validated); CI targets CPython 3.11/3.12.
 
-**Integration:** Baseline main `3d501ba` includes PRs #1–5 (finite sensor values, cached-fix checks, privacy controls, neutral replies and collision-safe archived history). This latest-file patch is proposed on `noe/portfolio-beacon-atomic-latest`; it is not integrated while on the branch.
+**Integration:** Baseline main `3d501ba` includes merged PRs #1–5 (finite sensor values, cached-fix checks, privacy controls, neutral replies and collision-safe archived history). The latest-file change is [PR #6](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/6); use the PR's actual state for integration, not a branch note as a claim of merge.
 
-**Validation:** [Test-first branch CI 42529945672](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42529945672) reproduced three failures (22 tests total) on each Python 3.11/3.12: two injected replacement failures and an unserializable packet causing a partial latest update. Exact candidate test evidence belongs in the PR, and merging requires observing current required checks.
+**Validation:** [Test-first branch CI 42529945672](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42529945672) reproduced three failures (22 tests total) on each Python 3.11/3.12. [Candidate CI 42530106583](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42530106583) passed 22/22 synthetic tests and compilation on each version at `2c5ae7e`. PR #6 owns subsequent exact-revision validation evidence; branch checks alone cannot establish a merged-main result.
 
 **Publication:** No verified GitHub release/tag for these maintenance changes; the historical script's “Public Release Tutorial Build 1.1” label is not publication evidence.
 
 **Latest meaningful change:** Serialize packet before touching any destination; stage each new `latest_*` file in the same folder and replace its filename only after the staged file is closed. Clean staged files on caught failures; preserve the previous complete file if replacement fails. The public Shortcuts message, default privacy switches, timestamped history naming and packet schema are unchanged.
 
-**Next steps:** (1) Validate the branch against synthetic failure injection and pre-existing safety cases on Python 3.11/3.12; (2) merge only once current and allowed, then confirm merged-main validation; (3) assess whether explicit failure-status metadata should prevent a previous successful JSON packet from being mistaken for the latest failure message, as a separate compatibility decision.
+**Next selected steps:** (1) Confirm integration and exact merged-main checks via PR #6; (2) separately evaluate whether stale successful latest JSON should be explicitly marked when a later failure-only message is saved, without deleting historical records; (3) seek real-device/Shortcuts evidence only if it materially changes platform support.
 
 ## Acceptance criteria and scope
 
