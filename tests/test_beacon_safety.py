@@ -212,5 +212,52 @@ class BeaconSafetyTests(unittest.TestCase):
         self.assertNotIn("trusted check-in phrase was received", message.lower())
 
 
+
+    def test_timestamped_history_keeps_both_runs_in_same_second(self):
+        # Shortcuts can trigger repeated saves with the same wall-clock second.
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            fixed = beacon.datetime.datetime(2026, 11, 8, 21, 20, 0)
+            with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
+                 mock.patch.object(beacon, "SAVE_TIMESTAMPED_HISTORY", True), \
+                 mock.patch.object(beacon, "now_local_dt", return_value=fixed), \
+                 mock.patch.object(beacon.os.path, "expanduser", return_value=str(home)):
+                beacon.save_outputs("first check-in", {"run": 1})
+                beacon.save_outputs("second check-in", {"run": 2})
+            folder = home / beacon.SAVE_FOLDER_NAME
+            messages = sorted(folder.glob("buddy_beacon_*.txt"))
+            packets = sorted(folder.glob("buddy_beacon_*.json"))
+            self.assertEqual(len(messages), 2)
+            self.assertEqual(len(packets), 2)
+            self.assertEqual({p.read_text() for p in messages},
+                             {"first check-in", "second check-in"})
+            self.assertEqual({json.loads(p.read_text())["run"] for p in packets},
+                             {1, 2})
+            self.assertEqual({p.stem for p in messages}, {p.stem for p in packets})
+            self.assertEqual((folder / "latest_buddy_beacon_message.txt").read_text(),
+                             "second check-in")
+
+    def test_existing_timestamped_history_is_never_replaced(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            folder = home / beacon.SAVE_FOLDER_NAME
+            folder.mkdir()
+            stamp = "20261108_212000"
+            prior_txt = folder / ("buddy_beacon_" + stamp + ".txt")
+            prior_json = folder / ("buddy_beacon_" + stamp + ".json")
+            prior_txt.write_text("original message")
+            prior_json.write_text('{"run": 0}')
+            fixed = beacon.datetime.datetime(2026, 11, 8, 21, 20, 0)
+            with mock.patch.object(beacon, "SAVE_LOCAL_FILES", True), \
+                 mock.patch.object(beacon, "SAVE_TIMESTAMPED_HISTORY", True), \
+                 mock.patch.object(beacon, "now_local_dt", return_value=fixed), \
+                 mock.patch.object(beacon.os.path, "expanduser", return_value=str(home)):
+                beacon.save_outputs("new message", {"run": 1})
+            self.assertEqual(prior_txt.read_text(), "original message")
+            self.assertEqual(json.loads(prior_json.read_text()), {"run": 0})
+            texts = list(folder.glob("buddy_beacon_*.txt"))
+            self.assertEqual(len(texts), 2)
+            self.assertEqual({p.read_text() for p in texts}, {"original message", "new message"})
+
 if __name__ == "__main__":
     unittest.main()
