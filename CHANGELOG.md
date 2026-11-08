@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Timestamped history integrity
+
+- Preserve previous per-run local message/JSON reports when multiple check-ins share a wall-clock second: use exclusive archive creation and a matching suffixed stem on collisions. Existing archive names and latest-file compatibility remain; interruption-proof or atomic multi-file persistence is **not** claimed.
+
 ### Reply identity and trigger accuracy
 
 - Make generated success replies owner-neutral rather than hard-coding a name; publicly reusable check-ins no longer disclose an assumed identity.
