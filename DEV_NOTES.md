@@ -2,20 +2,22 @@
 
 ## Development summary
 
-**Current goal:** Make beacon local-storage opt-outs truthful without breaking the default check-in and Shortcuts interface. On the previous source, `SAVE_LOCAL_FILES = False` still created an exception traceback file, while plaintext/JSON history accumulated without a latest-only option. Target: next unreleased privacy-maintenance patch. Support target remains Pythonista 3 / iOS (unverified) and tested CPython 3.11/3.12.
+**Current goal:** Keep public beacon replies identity-neutral and truthful about what the script actually verifies. The existing success message hard-coded a person's name and both reply paths claimed the trusted trigger had been received, although only Shortcuts controls triggering and recipients. Target: an unreleased messaging-correctness patch. Pythonista 3 / iOS remains an unverified intended environment; CPython 3.11/3.12 is the test environment.
 
-**Integration:** Sensor repairs [PR #1](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/1) and [PR #2](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/2) are merged; current baseline main `53bce316`. Privacy controls are being developed on `noe/portfolio-beacon-private-logs`; proposed until explicitly merged. Existing user data is not migrated or deleted.
+**Integration:** Sensor repairs [PR #1](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/1), [PR #2](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/2) and local privacy controls [PR #3](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/3) are merged; selected baseline main is `f6c8337`. Message neutrality is proposed on `noe/portfolio-beacon-neutral-checkin` until merged. Existing reports and recipients are untouched.
 
-**Validation:** Five new synthetic privacy tests include failure-path no-write, latest-only history, opt-in diagnostics and legacy history compatibility; the original source failed 3/14 checks per Python 3.11/3.12 at [test-first CI 42405585205](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42405585205). Exact repaired-source validation and integration state belong in the new PR, not inferred here. Earlier stale-fix and numeric tests remain in the same suite. No iPhone, real location, clipboard or Shortcuts integration tests are claimed.
+**Validation:** Two new synthetic reply regressions reproduced the predecessor's identity and unverified-trigger claims (2/16 failures each on Python 3.11 and 3.12) in [test-first CI 42520161376](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42520161376). Exact corrected-source checks belong in the PR; no result is anticipated here. Previous sensor and privacy tests remain. No iPhone, real location, clipboard, or Shortcuts authentication/delivery tests are claimed.
 
 **Publication:** No verified GitHub release/tag for this maintenance correction. The original file's “Public Release Tutorial Build 1.1” header is historical, not proof of publication.
 
-**Meaningful proposed change:** `SAVE_LOCAL_FILES` governs all writes, even traceback capture. `SAVE_TIMESTAMPED_HISTORY` defaults to True for existing tutorial behaviour but may be set False to retain only latest reports. New `SAVE_ERROR_TRACEBACK` defaults to False, with explicit opt-in while local saving is enabled. Clipboard and Shortcuts output are unaffected, and existing files are never removed. Earlier sensor freshness and numeric repairs stay intact.
+**Meaningful proposed change:** Remove the hard-coded owner identity from the success reply and stop both reply paths claiming that the trusted check-in phrase was verified. The script builds replies; Shortcuts selects and filters incoming triggers and recipients. Earlier privacy options, GPS logic, packet data structure, saving, and clipboard behaviour remain unchanged.
 
-**Next selected steps:** (1) Validate the exact proposed privacy change on CPython 3.11/3.12 and review its diff. (2) Merge a low-risk PR only if checks, branch status and protections allow. (3) Revisit real Pythonista behaviour only with suitable evidence; do not ask Dylan to operate routine tests.
+**Next selected steps:** (1) Validate the exact message fix on CPython 3.11/3.12 and inspect both CI job results. (2) Merge only if the branch remains current and required checks permit. (3) Keep device-specific Shortcuts behaviour unverified until real evidence is available.
 
 ## Acceptance criteria and scope
 
+- Neither success nor failure messages may identify a particular owner by default or assert that the script authenticated a Shortcuts trigger.
+- Existing location, storage and clipboard paths must remain unchanged; synthetic device-free tests must pass on Python 3.11/3.12.
 - A cached location older than 30 seconds, a missing/non-finite timestamp, or a timestamp more than 5 seconds in the future must not produce a normal check-in.
 - A fresh reading (including small positive clock skew) remains eligible; old and new samples are not combined.
 - Real `timestamp` values supplied by iOS remain in the raw sample; collection time must not masquerade as a location-fix time.

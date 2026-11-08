@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Reply identity and trigger accuracy
+
+- Make generated success replies owner-neutral rather than hard-coding a name; publicly reusable check-ins no longer disclose an assumed identity.
+- Stop both success and failure messages claiming that the script verified a trusted triggering phrase; Shortcuts is responsible for trigger and recipient filtering. Message structure, location logic and save settings remain unchanged.
+
 ### Local privacy controls
 
 - Honor `SAVE_LOCAL_FILES = False` even on processing failures: no traceback folder or file is created by the exception path.
