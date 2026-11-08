@@ -2,27 +2,24 @@
 
 ## Development summary
 
-**Current goal:** Keep public beacon replies identity-neutral and truthful about what the script actually verifies. The existing success message hard-coded a person's name and both reply paths claimed the trusted trigger had been received, although only Shortcuts controls triggering and recipients. Target: an unreleased messaging-correctness patch. Pythonista 3 / iOS remains an unverified intended environment; CPython 3.11/3.12 is the test environment.
+**Current goal:** Prevent repeated beacon check-ins within the same second from overwriting earlier timestamped local reports. Target: small unreleased history-integrity correction. Intended platform: Pythonista 3/iOS (unverified); automated validation targets CPython 3.11/3.12.
 
-**Integration:** Sensor repairs [PR #1](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/1), [PR #2](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/2) and local privacy controls [PR #3](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/3) are merged; selected baseline main is `f6c8337`. Message neutrality is proposed on `noe/portfolio-beacon-neutral-checkin` until merged. Existing reports and recipients are untouched.
+**Integration:** Earlier sensor, privacy and message repairs [PRs #1–4](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pulls?q=is%3Apr+is%3Amerged) are merged. Baseline main for this change: `4c58d558`. Collision-safe archive writing is proposed on `noe/portfolio-beacon-history-collisions`, not yet integrated as of this branch's documentation. Existing latest-file, message, recipient, location and permission logic is unchanged.
 
-**Validation:** Two new synthetic reply regressions reproduced the predecessor's identity and unverified-trigger claims (2/16 failures each on Python 3.11 and 3.12) in [test-first CI 42520161376](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42520161376). Exact corrected-source checks belong in the PR; no result is anticipated here. Previous sensor and privacy tests remain. No iPhone, real location, clipboard, or Shortcuts authentication/delivery tests are claimed.
+**Validation:** A test-first [CI run 42524965803](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42524965803) reproduced both failures on each of Python 3.11/3.12: two saves in one second collapsed into one archived report; an earlier archive pair was overwritten. Exact candidate validation belongs in this branch's PR; the two preceding runs alone do not validate the repair.
 
-**Publication:** No verified GitHub release/tag for this maintenance correction. The original file's “Public Release Tutorial Build 1.1” header is historical, not proof of publication.
+**Publication:** No observed GitHub release/tag for these maintenance changes; the source's historical “Public Release Tutorial Build 1.1” label does not prove a published release.
 
-**Meaningful proposed change:** Remove the hard-coded owner identity from the success reply and stop both reply paths claiming that the trusted check-in phrase was verified. The script builds replies; Shortcuts selects and filters incoming triggers and recipients. Earlier privacy options, GPS logic, packet data structure, saving, and clipboard behaviour remain unchanged.
+**Latest meaningful change:** New history entries use the original second-resolution names when available, appending an integer suffix only on collision. Exclusive creation prevents replacement of pre-existing archive entries, and paired text/JSON files share the chosen stem. An interrupted write can still leave a partial new entry, and the existing `latest_*` files are still overwritten in place; this patch is **not** a crash-safe or power-loss guarantee.
 
-**Next selected steps:** (1) Validate the exact message fix on CPython 3.11/3.12 and inspect both CI job results. (2) Merge only if the branch remains current and required checks permit. (3) Keep device-specific Shortcuts behaviour unverified until real evidence is available.
+**Next selected steps:** (1) Validate exact candidate and inspect both Python-version logs; (2) merge only when current and permitted by required checks; (3) later assess latest-file crash safety or real-device behaviour if independent evidence warrants it.
 
 ## Acceptance criteria and scope
 
-- Neither success nor failure messages may identify a particular owner by default or assert that the script authenticated a Shortcuts trigger.
-- Existing location, storage and clipboard paths must remain unchanged; synthetic device-free tests must pass on Python 3.11/3.12.
-- A cached location older than 30 seconds, a missing/non-finite timestamp, or a timestamp more than 5 seconds in the future must not produce a normal check-in.
-- A fresh reading (including small positive clock skew) remains eligible; old and new samples are not combined.
-- Real `timestamp` values supplied by iOS remain in the raw sample; collection time must not masquerade as a location-fix time.
-- Retain the former finite-coordinate/accuracy and truthful-error-message tests.
-- Complete device-free tests on CPython 3.11/3.12. Do not change the packet structure, local-file layout or recipient/Shortcuts behaviour as part of this fix.
+- Two writes in the same wall-clock second must each retain their own archived text, and (when available) JSON, using one matching stem per run.
+- A pre-existing archived text/JSON pair must never be truncated or replaced by a new report. Keep the existing archive naming style for the first run and use suffixes only when needed.
+- Preserve `SAVE_LOCAL_FILES = False` (no file creation), `SAVE_TIMESTAMPED_HISTORY = False` (latest only), and Shortcuts print/clipboard behaviour.
+- Keep prior freshness, finite-reading and neutral-message safety tests passing, with 18/18 synthetic checks on each CPython 3.11/3.12 candidate. Do not change the location packet schema or recipient handling.
 
 The source targets Pythonista 3 / iOS as a **design intention**. Actual location timestamp semantics in a running device, permission prompts, background Shortcuts execution, recipient delivery, clock changes, rescue-radius accuracy, and message confidentiality remain unverified. A fresh timestamp does not guarantee physical accuracy; it only excludes obviously stale provider samples.
 
@@ -51,6 +48,14 @@ The source targets Pythonista 3 / iOS as a **design intention**. Actual location
 **Options:** disable all saving by default (would break existing tutorial workflows), silently delete older files (would risk data loss), or provide explicit independent controls. **Decision:** keep legacy success-path defaults, make the master local-file switch authoritative even on errors, add a latest-only option while retaining history by default, and require opt-in for traceback files. The Shortcuts print and clipboard paths are unchanged. Previously saved files are preserved, not cleansed. Manual removal remains the user's choice.
 
 **Acceptance:** synthetic tests must establish no folder on failures when saving is off; the latest-only mode must save only latest files; legacy history remains possible; tracebacks require both explicit opt-in and local saving. No real-device validation or automatic encryption/retention claim is made.
+
+## Design decision — preserve history during timestamp collisions
+
+**Verified predecessor:** `save_outputs()` opened `buddy_beacon_YYYYMMDD_HHMMSS.txt` (and matching JSON) using write/truncate mode. Two calls within one second reused exactly the same paths, destroying the earlier report; both failures were reproduced with synthetic local fixtures, not real device data.
+
+**Options:** append to one file (breaks per-run layout), switch to microsecond timestamps (makes collisions less likely, not impossible), or retain the naming contract and use exclusive creation with bounded suffix retries (**chosen**). The selected design preserves earlier archives without renaming or removing them and keeps paired files on a common stem. An existing JSON sibling prevents reuse of an orphaned stem.
+
+**Trade-offs:** Up to 1,000 name candidates are attempted per timestamp second. Individual new files can still be partial after an interrupted write; latest files still use non-atomic overwrite, and pairs are not transactionally committed. Ordinary file I/O errors remain non-fatal to sending the Shortcuts output, so a missing archive is possible. This is archive collision prevention, **not** durable or atomic saving. Consider staged atomic latest-file replacement separately if device/filesystem evidence justifies it.
 
 ## Test commands
 
