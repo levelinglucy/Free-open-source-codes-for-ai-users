@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Strict packet JSON
+
+- Refuse `NaN` and infinite numbers anywhere in generated location packets before creating a human/JSON Shortcuts reply or saving files; such packets follow the existing failure-message path rather than yielding nonstandard JSON.
+- Reuse strict, pre-serialized packet JSON for latest and timestamped files. Valid finite formatting and existing filenames are preserved, and invalid packets cannot overwrite completed reports.
+
 ### Latest-file integrity
 
 - Pre-serialize each packet, then stage the latest text/JSON files beside their targets and replace each only after a complete write. An unsupported packet or failed replacement no longer truncates the previously complete destination; failed staging files are cleaned up. This is **per-file**, not transactional or power-loss durable, and prior successful JSON remains after a failure-only message.

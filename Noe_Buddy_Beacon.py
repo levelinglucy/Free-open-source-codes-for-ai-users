@@ -1388,7 +1388,7 @@ def save_outputs(message, packet=None):
     try:
         # Ensure an unsupported packet cannot replace an otherwise complete
         # latest message or leave behind a truncated JSON record.
-        packet_json = json.dumps(packet, indent=2, sort_keys=True) if packet is not None else None
+        packet_json = json.dumps(packet, indent=2, sort_keys=True, allow_nan=False) if packet is not None else None
         folder = ensure_save_folder()
         latest_txt = os.path.join(folder, "latest_buddy_beacon_message.txt")
         _replace_latest_complete(latest_txt, message)
@@ -1416,7 +1416,7 @@ def save_outputs(message, packet=None):
                     continue
                 if packet is not None:
                     with open(stamped_json, "x", encoding="utf-8") as f:
-                        json.dump(packet, f, indent=2, sort_keys=True)
+                        f.write(packet_json)
                 break
             else:
                 raise OSError("No unused timestamped history name available")
@@ -1440,7 +1440,10 @@ def output_message(message):
 def main():
     try:
         packet = build_packet()
-        message = make_human_message(packet) if OUTPUT_HUMAN_MESSAGE else json.dumps(packet, indent=2, sort_keys=True)
+        # Preflight the complete packet before rendering an SMS or JSON reply.
+        # Python's default JSON encoder otherwise permits NaN and Infinity.
+        packet_json = json.dumps(packet, indent=2, sort_keys=True, allow_nan=False)
+        message = make_human_message(packet) if OUTPUT_HUMAN_MESSAGE else packet_json
 
         # Also include the short message in packet for AI/manual use if JSON saved.
         packet["sharing"] = {
