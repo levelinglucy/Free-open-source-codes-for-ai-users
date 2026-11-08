@@ -1365,21 +1365,34 @@ def save_outputs(message, packet=None):
         with open(latest_txt, "w", encoding="utf-8") as f:
             f.write(message)
 
-        stamp = now_local_dt().strftime("%Y%m%d_%H%M%S") if SAVE_TIMESTAMPED_HISTORY else None
-        if stamp is not None:
-            stamped_txt = os.path.join(folder, "buddy_beacon_{}.txt".format(stamp))
-            with open(stamped_txt, "w", encoding="utf-8") as f:
-                f.write(message)
-
         if packet is not None:
             latest_json = os.path.join(folder, "latest_buddy_beacon_packet.json")
             with open(latest_json, "w", encoding="utf-8") as f:
                 json.dump(packet, f, indent=2, sort_keys=True)
 
-            if stamp is not None:
-                stamped_json = os.path.join(folder, "buddy_beacon_{}.json".format(stamp))
-                with open(stamped_json, "w", encoding="utf-8") as f:
-                    json.dump(packet, f, indent=2, sort_keys=True)
+        if SAVE_TIMESTAMPED_HISTORY:
+            # Second-resolution names can collide on repeated Shortcuts runs.
+            # Reserve the message name exclusively, keeping the JSON sibling
+            # on the same unique stem. Never truncate an earlier history entry.
+            stamp = now_local_dt().strftime("%Y%m%d_%H%M%S")
+            for attempt in range(1000):
+                suffix = "" if attempt == 0 else "_{}".format(attempt)
+                stem = "buddy_beacon_{}{}".format(stamp, suffix)
+                stamped_txt = os.path.join(folder, stem + ".txt")
+                stamped_json = os.path.join(folder, stem + ".json")
+                if os.path.lexists(stamped_json):
+                    continue
+                try:
+                    with open(stamped_txt, "x", encoding="utf-8") as f:
+                        f.write(message)
+                except FileExistsError:
+                    continue
+                if packet is not None:
+                    with open(stamped_json, "x", encoding="utf-8") as f:
+                        json.dump(packet, f, indent=2, sort_keys=True)
+                break
+            else:
+                raise OSError("No unused timestamped history name available")
 
     except Exception:
         # Do not break the beacon just because saving failed.
