@@ -2,26 +2,34 @@
 
 ## Development summary
 
-**Current goal:** Preserve complete previously saved latest message/packet files if serialization or file replacement fails. Target: unreleased atomic-per-file integrity repair. Intended platform: Pythonista 3/iOS (not device-validated); CI targets CPython 3.11/3.12.
+**Current goal:** Reject non-finite numbers anywhere in a generated Beacon packet before presenting a check-in or saving JSON. Target: strict-JSON safety repair (unreleased). Intended platform: Pythonista 3/iOS (not device-tested); synthetic CI: CPython 3.11/3.12.
 
-**Integration:** Baseline main `3d501ba` includes merged PRs #1–5 (finite sensor values, cached-fix checks, privacy controls, neutral replies and collision-safe archived history). The latest-file change is [PR #6](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/6); use the PR's actual state for integration, not a branch note as a claim of merge.
+**Integration:** PRs #1–6 are merged on main through `cad841828cb2`. This strict-number repair is proposed on `noe/portfolio-beacon-strict-json`; do not treat a passing branch or PR check as merged-main evidence.
 
-**Validation:** [Test-first branch CI 42529945672](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42529945672) reproduced three failures (22 tests total) on each Python 3.11/3.12. [Candidate CI 42530106583](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42530106583) passed 22/22 synthetic tests and compilation on each version at `2c5ae7e`. PR #6 owns subsequent exact-revision validation evidence; branch checks alone cannot establish a merged-main result.
+**Validation:** [Test-first CI 42535045359](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42535045359) reproduced five expected assertions (three nested-value variants plus human/JSON output) on **each** Python 3.11 and 3.12; the finite compatibility test passed. Candidate and exact merged-main validation must be checked separately before claiming completion.
 
-**Publication:** No verified GitHub release/tag for these maintenance changes; the historical script's “Public Release Tutorial Build 1.1” label is not publication evidence.
+**Publication:** The maintenance changes have no verified tag or release. The historical "Public Release Tutorial Build 1.1" header is not publication evidence.
 
-**Latest meaningful change:** Serialize packet before touching any destination; stage each new `latest_*` file in the same folder and replace its filename only after the staged file is closed. Clean staged files on caught failures; preserve the previous complete file if replacement fails. The public Shortcuts message, default privacy switches, timestamped history naming and packet schema are unchanged.
+**Latest meaningful change:** Validate packet encoding with `allow_nan=False` before rendering either Shortcuts output format; reject NaN/Infinity before any saved destination changes, and reuse the same strict serialization for latest and archived JSON. Valid finite packets retain their existing JSON formatting and filenames.
 
-**Next selected steps:** (1) Confirm integration and exact merged-main checks via PR #6; (2) separately evaluate whether stale successful latest JSON should be explicitly marked when a later failure-only message is saved, without deleting historical records; (3) seek real-device/Shortcuts evidence only if it materially changes platform support.
+**Next selected steps:** (1) Validate the candidate and exact merged-main revision before promotion; (2) assess stale successful latest JSON after later failure-only messages separately, including data-preserving compatibility options; (3) revisit actual iOS/Shortcuts evidence if available, without making it a routine prerequisite.
 
 ## Acceptance criteria and scope
 
-- When `os.replace` fails, each affected `latest_*` destination retains the exact previous complete file, with failed staging files cleaned up.
-- Unsupported packet objects fail *before* the previous latest message or packet is modified. Both synthetic and normal updates stay readable.
-- Successful message and JSON saves preserve their existing filenames, JSON formatting, Shortcuts output and archive naming; local-saving privacy switches work as before.
-- Candidate and merged-main compilation and all 22 synthetic tests pass on CPython 3.11 and 3.12.
+- Any nested non-finite packet number fails before human-message rendering, JSON output or local file publication; use the existing general failure-message path.
+- An invalid packet presented to `save_outputs()` leaves existing completed latest files and timestamped history intact; failed output does not create a new archive.
+- Valid finite JSON preserves previous sorted/indented format, message behaviour, filenames and independent local-saving controls.
+- All synthetic tests and compilation pass on exact candidate and merged-main Python 3.11/3.12 CI; this does not verify iPhone operation.
 
-**Limitations:** Latest message and packet are *two separate replaces*, not a transaction. A failure after publishing the message may leave a previous packet, and a failed check-in with `packet=None` intentionally does not erase a prior successful JSON packet; consumers must not mistake it for a same-check-in record. Crashes may leave a staging file and no directory `fsync` is performed; no power-loss, concurrent-writer, guaranteed disk durability or device-portability claim is justified. Archived pairs remain susceptible to partial writes on interruption. Pythonista runtime, iOS Shortcuts and actual SMS delivery have not been tested.
+**Limitations:** This is a last-line packet boundary, not an independent calibration of GPS accuracy or source freshness; its synthetic proof cannot guarantee all physical sensor errors are detected. Per-file latest publication is not a multi-file transaction. A failure-only latest message may accompany an *older* successful packet; consumers must not infer that the two represent one attempt. Archived pairs can be partial on interrupted writes. Power loss, fsync, concurrent writers, iOS/Pythonista/Shortcuts and SMS delivery remain unverified. This repair does not rewrite or delete existing personal reports.
+
+## Design decision — strict packet JSON
+
+**Verified predecessor:** Python's default `json.dumps()` and `json.dump()` accept `NaN`, `Infinity` and `-Infinity` even though they are not valid standard JSON numbers. Disposable regression tests confirmed that Beacon would replace a completed latest report with a nonstandard nested packet and could emit such values through both Shortcuts output modes.
+
+**Alternatives:** Rely only on earlier sensor normalization (misses non-finite values introduced elsewhere), sanitize invalid numbers to null (silently invents a different measurement), or reject the entire packet before rendering/publishing (**chosen**). Reuse the validated serialization for archived JSON so its representation cannot diverge from latest JSON.
+
+**Trade-off:** A packet containing invalid data now results in the existing failure reply rather than a partial location report. Standard finite output formatting and schema remain unchanged. As with other failure cases, previously saved JSON is preserved and must not be mistaken for a new failed attempt; readers should compare source times and check the latest failure message.
 
 ## Design decision — stage latest files before replacement
 

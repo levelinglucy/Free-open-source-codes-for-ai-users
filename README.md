@@ -21,6 +21,8 @@ These surfaces can expose sensitive whereabouts to other people or apps with acc
 
 Reverse-geocoding may contact the platform's location service. The script does not directly send SMS or upload logs, but Shortcuts can transmit output to the recipient you configure. Only use this on your own device with consenting contacts; do not use it to surveil others.
 
+Non-finite numeric values (such as `NaN` or `Infinity`) are rejected before preparing a check-in reply or writing its JSON packet; the existing failure-message path is used instead. Previously saved files are not rewritten.
+
 ## Development
 
 See [developer notes](./DEV_NOTES.md) for project scope, validation, known limits and the next milestone. See [changelog](./CHANGELOG.md) for substantive revisions. Automated tests operate entirely on synthetic readings and **do not test Pythonista, iOS or actual message delivery**.
