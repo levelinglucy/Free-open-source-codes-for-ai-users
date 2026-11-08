@@ -9,7 +9,7 @@
 3. Create a Shortcuts *Message* automation with a **trusted sender filter** and a hard-to-trigger phrase. Have Shortcuts run the Pythonista script and send its result only to a consenting safety contact.
 4. Test deliberately, with that contact, before relying on the automation. Confirm behaviour when the phone is locked or location permission is unavailable. Actual iOS behaviour is **not verified by this repository's automated tests**.
 
-The default public tutorial example phrase is **not a secret credential**. Replace it with your own phrase; a text trigger is not authentication. Keep the sender filter, recipient and other Shortcuts permissions under your control.
+The default public tutorial example phrase is **not a secret credential**. Replace it with your own phrase; a text trigger is not authentication. Keep the sender filter, recipient and other Shortcuts permissions under your control. The script itself cannot verify the triggering message or its sender: replies deliberately avoid claiming it did so and do not identify a named owner by default.
 
 ## Safety and privacy
 
