@@ -39,6 +39,11 @@ class LatestReceiptTests(unittest.TestCase):
             receipt = json.loads((folder / "latest_buddy_beacon_status.json").read_text())
             self.assertEqual(receipt["status"], "failed")
             self.assertIsNone(receipt["packet_sha256"])
+            # The next successful attempt replaces the old success and its
+            # failed receipt with a matching, new successful receipt.
+            self._save(home, "success #2", {"find_me": {"latitude_degrees": 52.0}})
+            self.assertEqual(beacon.latest_checkin_state(str(folder)), "success")
+            self.assertIn(b'52.0', (folder / "latest_buddy_beacon_packet.json").read_bytes())
 
     def test_missing_receipt_or_modified_files_are_unknown_not_success(self):
         with tempfile.TemporaryDirectory() as directory:

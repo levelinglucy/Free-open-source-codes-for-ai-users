@@ -4,15 +4,15 @@
 
 **Current goal:** Allow consumers of saved reports to distinguish a failed check-in from an older successful latest JSON packet, without deleting that previous evidence. Target: latest-attempt receipt candidate (unreleased). Intended environment: Pythonista 3/iOS (not device-tested); synthetic CI: CPython 3.11/3.12.
 
-**Integration:** PRs #1–7 have been observed merged through `7cfa230b`. This receipt change is proposed on `noe/portfolio-beacon-latest-receipt`; no merge, release or passing validation is presumed until observed.
+**Integration:** PRs #1–7 are merged through `7cfa230b`. [PR #8](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/8) is the authoritative record for whether the receipt code is proposed or merged; branch checks alone do not prove integration.
 
-**Validation:** The test-first branch commit `2a8c09d` reproduced three expected missing-receipt errors on each Python 3.11 and 3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42539838512)); the existing 27 tests and the fourth disabled-saving test passed. New candidate and merged-main checks remain to be observed.
+**Validation:** The test-first branch commit `2a8c09d` reproduced three expected missing-receipt errors on each Python 3.11 and 3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42539838512)); the other 27 tests passed, including the new disabled-saving check. [Candidate CI 42539996909](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42539996909) passed 30/30 and compilation per Python 3.11/3.12 at `1b1138bb`; see PR #8 for final revision and merged-main validation.
 
 **Publication:** No verified tag or release for the maintenance series. The original tutorial build header is not a GitHub release.
 
 **Meaningful change:** After updating the latest message and optionally its successful packet, publish a last-write completion receipt containing only a status and SHA-256 digests of those bytes. Verify both files before returning `success`; a `failed` receipt validates its failure message but makes no assertion about any previously saved JSON. Missing, interrupted or mismatched records return `unknown`.
 
-**Next steps:** (1) Validate the exact candidate revision and merge if checks and repository protections allow; (2) verify merged-main CI separately; (3) revisit true multi-file durability or iPhone evidence only on a concrete need. No manual device work required.
+**Next steps:** (1) Confirm PR #8 and exact merged-main CI before reporting integration/validation; (2) revisit true multi-file durability or trusted iPhone evidence only on a concrete need; (3) select another evidence-backed portfolio milestone. No manual device work required.
 
 ## Latest-attempt receipt — decision and acceptance
 
@@ -24,7 +24,7 @@
 
 **Limitations:** Receipt hashes are neither cryptographic signatures nor protections against intentional tampering; neither do they guarantee physical GPS freshness. A crash before any durable record of an attempt remains unknowable. The files are not an atomic transaction and power-loss, concurrent writers, Shortcuts and actual iPhone behaviour remain unverified. Legacy consumers must opt in to checking the receipt; old packet-only consumers can still mistake stale JSON for current data. Never treat an `unknown` result as success.
 
-## Acceptance criteria and scope
+## Predecessor milestone — strict packet JSON acceptance and scope
 
 - Any nested non-finite packet number fails before human-message rendering, JSON output or local file publication; use the existing general failure-message path.
 - An invalid packet presented to `save_outputs()` leaves existing completed latest files and timestamped history intact; failed output does not create a new archive.
