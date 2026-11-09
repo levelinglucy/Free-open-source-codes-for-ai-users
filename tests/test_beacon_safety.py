@@ -134,7 +134,8 @@ class BeaconSafetyTests(unittest.TestCase):
             self.assertEqual(json.loads(
                 (folder / "latest_buddy_beacon_packet.json").read_text()), {"synthetic": True})
             self.assertEqual(sorted(p.name for p in folder.iterdir()), [
-                "latest_buddy_beacon_message.txt", "latest_buddy_beacon_packet.json"
+                "latest_buddy_beacon_message.txt", "latest_buddy_beacon_packet.json",
+                "latest_buddy_beacon_status.json"
             ])
 
     def test_timestamped_history_remains_available_for_compatibility(self):

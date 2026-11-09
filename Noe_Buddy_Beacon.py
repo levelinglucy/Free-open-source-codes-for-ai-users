@@ -272,6 +272,7 @@
 # ============================================================
 #
 import datetime
+import hashlib
 import json
 import math
 import os
@@ -1381,6 +1382,59 @@ def _replace_latest_complete(path, text):
                 pass
 
 
+
+def _sha256_text(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _sha256_file(path):
+    """Hash bytes incrementally so a saved packet need not be copied into RAM."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as source:
+        while True:
+            chunk = source.read(65536)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def latest_checkin_state(folder):
+    """Return 'success', 'failed' or 'unknown' for the latest *saved* attempt.
+
+    A prior successful JSON packet may remain after a failed attempt. Only a
+    matching completion receipt can associate latest files with the same
+    attempted check-in. This is consistency checking, not authentication,
+    transactional storage, freshness of GPS, or power-loss durability.
+    Legacy files without a receipt deliberately report 'unknown'.
+    """
+    try:
+        with open(os.path.join(folder, "latest_buddy_beacon_status.json"),
+                  "r", encoding="utf-8") as status_file:
+            receipt = json.load(status_file)
+        if not isinstance(receipt, dict) or type(receipt.get("schema_version")) is not int:
+            return "unknown"
+        if receipt["schema_version"] != 1 or receipt.get("status") not in ("success", "failed"):
+            return "unknown"
+
+        message_digest = receipt.get("message_sha256")
+        if not isinstance(message_digest, str) or len(message_digest) != 64:
+            return "unknown"
+        if _sha256_file(os.path.join(folder, "latest_buddy_beacon_message.txt")) != message_digest:
+            return "unknown"
+
+        packet_digest = receipt.get("packet_sha256")
+        if receipt["status"] == "failed":
+            return "failed" if packet_digest is None else "unknown"
+        if not isinstance(packet_digest, str) or len(packet_digest) != 64:
+            return "unknown"
+        if _sha256_file(os.path.join(folder, "latest_buddy_beacon_packet.json")) != packet_digest:
+            return "unknown"
+        return "success"
+    except (OSError, ValueError, TypeError, UnicodeError):
+        return "unknown"
+
+
 def save_outputs(message, packet=None):
     if not SAVE_LOCAL_FILES:
         return
@@ -1389,6 +1443,13 @@ def save_outputs(message, packet=None):
         # Ensure an unsupported packet cannot replace an otherwise complete
         # latest message or leave behind a truncated JSON record.
         packet_json = json.dumps(packet, indent=2, sort_keys=True, allow_nan=False) if packet is not None else None
+        receipt = {
+            "schema_version": 1,
+            "status": "success" if packet_json is not None else "failed",
+            "message_sha256": _sha256_text(message),
+            "packet_sha256": _sha256_text(packet_json) if packet_json is not None else None,
+        }
+        receipt_json = json.dumps(receipt, indent=2, sort_keys=True, allow_nan=False)
         folder = ensure_save_folder()
         latest_txt = os.path.join(folder, "latest_buddy_beacon_message.txt")
         _replace_latest_complete(latest_txt, message)
@@ -1396,6 +1457,13 @@ def save_outputs(message, packet=None):
         if packet_json is not None:
             latest_json = os.path.join(folder, "latest_buddy_beacon_packet.json")
             _replace_latest_complete(latest_json, packet_json)
+
+        # Publish last, after each latest file has been completely replaced.
+        # Readers cross-check hashes and reject older or interrupted combinations.
+        # A failed check-in leaves an older successful JSON packet untouched.
+        _replace_latest_complete(
+            os.path.join(folder, "latest_buddy_beacon_status.json"), receipt_json
+        )
 
         if SAVE_TIMESTAMPED_HISTORY:
             # Second-resolution names can collide on repeated Shortcuts runs.
