@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Latest-attempt association
+
+- Publish an additive completion receipt with status and exact message/packet SHA-256 hashes after the latest files; a failed check-in retains the earlier successful JSON but is explicitly marked failed for receipt-aware readers.
+- Add a strict `latest_checkin_state(folder)` reader returning `unknown` for missing, mismatched or interrupted file combinations. The receipt is not authenticated, transactional, device-tested or a substitute for actual location freshness; older packet-only readers must adopt it.
+
 ### Strict packet JSON
 
 - Refuse `NaN` and infinite numbers anywhere in generated location packets before creating a human/JSON Shortcuts reply or saving files; such packets follow the existing failure-message path rather than yielding nonstandard JSON.

@@ -89,7 +89,8 @@ class LatestReportIntegrityTests(unittest.TestCase):
             self.assertEqual((folder / "latest_buddy_beacon_message.txt").read_text(), "two check-ins")
             self.assertEqual(json.loads((folder / "latest_buddy_beacon_packet.json").read_text()), {"two": 2})
             self.assertEqual(sorted(p.name for p in folder.iterdir()),
-                             ["latest_buddy_beacon_message.txt", "latest_buddy_beacon_packet.json"])
+                             ["latest_buddy_beacon_message.txt", "latest_buddy_beacon_packet.json",
+                              "latest_buddy_beacon_status.json"])
 
 
 if __name__ == "__main__":

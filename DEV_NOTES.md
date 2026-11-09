@@ -2,17 +2,27 @@
 
 ## Development summary
 
-**Current goal:** Reject non-finite numbers anywhere in a generated Beacon packet before presenting a check-in or saving JSON. Target: strict-JSON safety repair (unreleased). Intended platform: Pythonista 3/iOS (not device-tested); synthetic CI: CPython 3.11/3.12.
+**Current goal:** Allow consumers of saved reports to distinguish a failed check-in from an older successful latest JSON packet, without deleting that previous evidence. Target: latest-attempt receipt candidate (unreleased). Intended environment: Pythonista 3/iOS (not device-tested); synthetic CI: CPython 3.11/3.12.
 
-**Integration:** PRs #1–6 are merged on main through `cad841828cb2`. This strict-number repair is proposed on `noe/portfolio-beacon-strict-json`; do not treat a passing branch or PR check as merged-main evidence.
+**Integration:** PRs #1–7 have been observed merged through `7cfa230b`. This receipt change is proposed on `noe/portfolio-beacon-latest-receipt`; no merge, release or passing validation is presumed until observed.
 
-**Validation:** [Test-first CI 42535045359](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42535045359) reproduced five expected assertions (three nested-value variants plus human/JSON output) on **each** Python 3.11 and 3.12; the finite compatibility test passed. Candidate and exact merged-main validation must be checked separately before claiming completion.
+**Validation:** The test-first branch commit `2a8c09d` reproduced three expected missing-receipt errors on each Python 3.11 and 3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42539838512)); the existing 27 tests and the fourth disabled-saving test passed. New candidate and merged-main checks remain to be observed.
 
-**Publication:** The maintenance changes have no verified tag or release. The historical "Public Release Tutorial Build 1.1" header is not publication evidence.
+**Publication:** No verified tag or release for the maintenance series. The original tutorial build header is not a GitHub release.
 
-**Latest meaningful change:** Validate packet encoding with `allow_nan=False` before rendering either Shortcuts output format; reject NaN/Infinity before any saved destination changes, and reuse the same strict serialization for latest and archived JSON. Valid finite packets retain their existing JSON formatting and filenames.
+**Meaningful change:** After updating the latest message and optionally its successful packet, publish a last-write completion receipt containing only a status and SHA-256 digests of those bytes. Verify both files before returning `success`; a `failed` receipt validates its failure message but makes no assertion about any previously saved JSON. Missing, interrupted or mismatched records return `unknown`.
 
-**Next selected steps:** (1) Validate the candidate and exact merged-main revision before promotion; (2) assess stale successful latest JSON after later failure-only messages separately, including data-preserving compatibility options; (3) revisit actual iOS/Shortcuts evidence if available, without making it a routine prerequisite.
+**Next steps:** (1) Validate the exact candidate revision and merge if checks and repository protections allow; (2) verify merged-main CI separately; (3) revisit true multi-file durability or iPhone evidence only on a concrete need. No manual device work required.
+
+## Latest-attempt receipt — decision and acceptance
+
+**Problem:** A failed attempt writes a failure-only latest text message, retaining the previous successful `latest_buddy_beacon_packet.json`. A consumer reading only the JSON could mistake it for the current attempt.
+
+**Alternatives:** Delete or overwrite the old packet (destroys potentially useful last-known information and can break historical readers), replace the packet with a failure object (breaking schema for existing consumers), or publish an additive status receipt (**chosen**). The new `latest_buddy_beacon_status.json` holds `schema_version`, `status` (`success`/`failed`), `message_sha256` and `packet_sha256` (null on failure). It contains no additional location information.
+
+**Acceptance:** On successful save, both hashes match the corresponding complete latest files and `latest_checkin_state(folder)` returns `success`. After failed check-in, it returns `failed` while older JSON bytes remain intact. A missing, corrupt, mismatched or incomplete receipt or file returns `unknown`. The receipt is published after the latest files via the existing staged-replacement helper. Disabled local saving creates nothing. Existing packet and message formats, filenames, clipboard and SMS paths remain unchanged.
+
+**Limitations:** Receipt hashes are neither cryptographic signatures nor protections against intentional tampering; neither do they guarantee physical GPS freshness. A crash before any durable record of an attempt remains unknowable. The files are not an atomic transaction and power-loss, concurrent writers, Shortcuts and actual iPhone behaviour remain unverified. Legacy consumers must opt in to checking the receipt; old packet-only consumers can still mistake stale JSON for current data. Never treat an `unknown` result as success.
 
 ## Acceptance criteria and scope
 
