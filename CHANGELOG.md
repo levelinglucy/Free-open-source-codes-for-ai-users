@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Nearby GPS fixes across the antimeridian
+
+- Use the shortest ±180° longitude arc during local weighted averaging, then return a normalized longitude. Previously, two nearby points separated by the dateline could yield a centre thousands of kilometres away and a grossly inflated rescue radius; no packet format, save history or ordinary non-wrapping location path changes. Synthetic CI is not real-device accuracy proof.
+
+
 ### Latest-attempt association
 
 - Publish an additive completion receipt with status and exact message/packet SHA-256 hashes after the latest files; a failed check-in retains the earlier successful JSON but is explicitly marked failed for receipt-aware readers.
