@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Complete-only timestamped history files
+
+- Stage each dated message/JSON archive privately, then use an exclusive hard link to expose only a completely written file. Previous same-second names are preserved; failed writes or link publication leave no partial final file and clean up temporary stages.
+- Add synthetic interrupted text/JSON write and failed-publication regressions (three red tests on the predecessor). Latest reports and receipts, output format and default history setting stay unchanged. Each archive is protected individually, **not** as a paired transaction; iPhone hard-link compatibility and power-loss durability remain unverified. [Decision](./DEV_NOTES.md#complete-only-timestamped-archives--decision-and-acceptance).
+
+
 ### Strict latest-attempt receipt evidence
 
 - Reject duplicate keys anywhere in a saved status receipt, and reject nonstandard `NaN`/`Infinity` values instead of accepting an ambiguous receipt as a verified `success` or `failed` check-in. Such records now return `unknown` without rewriting them or previous reports; ordinary receipts and existing output schema are unchanged.

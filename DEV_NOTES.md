@@ -2,17 +2,27 @@
 
 ## Development summary
 
-**Current goal:** Keep Beacon's latest-attempt receipt unambiguous and standards-conforming without breaking generated success/failure records. [PR #13](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/13) is the canonical source for this milestone's integration and exact validation evidence.
+**Current goal:** Publish each dated Beacon history file only after its complete payload is written, while preserving prior archive names and existing latest-report/receipt behaviour. The implementation and revision-specific checks belong to the history-publication PR.
 
-**Integration:** Cached-fix deduplication [PR #12](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/12) was integrated on main at `287dbb85`. Receipt parser changes are scoped to PR #13; consult its current merged/open status rather than treating a tested branch as published.
+**Integration:** [PR #13](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/13) merged the strict latest-receipt reader on main at `b3551714`. The timestamped-history change is a separate candidate, not merged or released merely because its tests run.
 
-**Validation:** Test-first `e9acc096` reproduced five strict-receipt failures (three nonstandard-token subcases plus two duplicate-key cases) in 48 tests per Python 3.11/3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854504221)). The complete 48-test suite plus compilation passed on candidate `a8ba39e9` for both versions ([observed branch CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854790555)). This is candidate evidence; PR #13 tracks later validation on other exact revisions, including merged main if applicable.
+**Validation:** Test-only predecessor `4548b6bd` exposed two partial archive writes and a missing exclusive-publication path: **2 failures and 1 error** with 51 tests per CPython 3.11/3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42874767650)). Later candidate/main results are recorded against their exact revision in the implementation PR, not inferred from the red run.
 
-**Publication:** Source-only maintenance, no newly verified tag or release. Pythonista/iOS, live GPS, Shortcuts, security against local tampering, concurrency and power-loss durability remain unverified.
+**Publication:** Source maintenance only, not a verified new tag or release. Pythonista/iOS hard-link support, physical GPS, Shortcuts delivery, concurrent writers and power-loss durability remain unverified.
 
-**Meaningful change:** Contradictory duplicate receipt keys, including digest/status duplicates, and nonstandard JSON constants now return `unknown` instead of silently accepting a last duplicate value or an invalid extra field. The packet/message files, receipt schema and content hashes do not change.
+**Meaningful change:** Stage and close timestamped archive contents before exclusive filename publication; a failed write/link can no longer expose truncated archive bytes under the final name. Latest receipt and report formats are unaffected.
 
-**Next:** Preserve the PR's revision-specific evidence and select another evidence-led maintenance or creative milestone. Revisit receipt format only if a real reader or durability requirement changes; no device validation is required to substantiate this narrow synthetic parsing result.
+**Next:** Verify the complete synthetic suite, file cleanup, same-second collision handling and pre-existing history preservation on exact branch/main revisions. Keep device support explicitly unverified and choose another milestone only when this integration is finished or parked.
+
+## Complete-only timestamped archives — decision and acceptance
+
+**Observed predecessor:** Dated history was created directly at its final `.txt` or `.json` pathname with `open(..., "x")`, then written. A synthetic interruption after one third of that write left a publicly visible truncated archive. Three synthetic test-first cases at `4548b6bd` reproduced incomplete text/JSON or absence of an exclusive-publication path. Previously saved archives were never overwritten, but new archive integrity was vulnerable.
+
+**Decision:** Write a private same-directory temporary file, close it, then claim its intended dated archive name with an exclusive `os.link`; always remove the private stage. A final name is complete or absent on normal write/link failure, and a prior collision is never replaced. `os.replace` could overwrite an existing dated history file; direct exclusive writing exposed partial names. This keeps filenames and latest receipt schema unchanged.
+
+**Acceptance:** Interruption during either archive write cannot expose partial final content; link failure leaves no final dated archive or stale stage; same-second suffix collisions and pre-existing reports remain intact; existing latest receipt/failure behaviour and whole synthetic test suite pass on supported hosted Python versions.
+
+**Trade-offs and limits:** Each archive member is complete at publication, **not** the text/JSON pair as a transaction; a failure after text publication may leave an unmatched complete message. Files can be absent when hard-link creation is unsupported or fails; local saving continues best-effort and the check-in output still prints. Hard-link availability in Pythonista's sandbox is unverified, so do not claim device-tested archival behaviour. No protection against adversarial concurrent path substitution, directory or drive failure, or power-loss durability is asserted. The original per-file latest-replacement path is unchanged.
 
 ## Strict latest-attempt receipt JSON — decision and acceptance
 
