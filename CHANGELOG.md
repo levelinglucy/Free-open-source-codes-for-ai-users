@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Strict latest-attempt receipt evidence
+
+- Reject duplicate keys anywhere in a saved status receipt, and reject nonstandard `NaN`/`Infinity` values instead of accepting an ambiguous receipt as a verified `success` or `failed` check-in. Such records now return `unknown` without rewriting them or previous reports; ordinary receipts and existing output schema are unchanged.
+- Add synthetic red-to-green cases for contradictory status/digest and nonstandard numeric tokens alongside a valid failure control. This improves read-time consistency only, not authenticity, concurrent publication, power-loss safety or live iPhone verification. [Decision](./DEV_NOTES.md#strict-latest-attempt-receipt-json--decision-and-acceptance).
+
+
 ### Distinct fresh GPS fixes
 
 - Count each identical cached iOS fix once, using its source timestamp, coordinates and reported horizontal accuracy; prevent duplicate polls from satisfying the three-fix early stop while preserving updated accuracy and distinct source times. Raw poll counts, output schema, local data and freshness policy stay unchanged. Two synthetic regressions reproduced the predecessor mistake; device behaviour remains unverified. [Decision](./DEV_NOTES.md#repeated-fresh-cached-fixes--decision-and-acceptance).
