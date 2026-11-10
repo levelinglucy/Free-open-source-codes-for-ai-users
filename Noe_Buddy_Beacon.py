@@ -757,6 +757,10 @@ def collect_locations():
 
     samples = []
     raw_polls = 0
+    # get_location() can return the same recent cached fix repeatedly.
+    # Such polls are not independent observations and must not trigger
+    # the three-sample early stop.
+    seen_fixes = set()
 
     location.start_updates()
 
@@ -768,6 +772,18 @@ def collect_locations():
             observed_time = time.time()
 
             if fresh_location(loc, observed_time):
+                # The source timestamp is the fix time, not this poll time.
+                # Retain a same-time fix when coordinates or accuracy change,
+                # but never count an identical cached reading twice.
+                signature = (
+                    safe_float(loc.get("timestamp")),
+                    safe_float(loc.get("latitude")),
+                    safe_float(loc.get("longitude")),
+                    safe_float(loc.get("horizontal_accuracy")),
+                )
+                if signature in seen_fixes:
+                    continue
+                seen_fixes.add(signature)
                 loc = dict(loc)
                 loc["_captured_local"] = iso_local()
                 loc["_captured_unix_time"] = observed_time
