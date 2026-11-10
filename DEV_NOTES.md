@@ -2,17 +2,27 @@
 
 ## Development summary
 
-**Current goal:** Avoid treating repeated returns of the *same fresh cached location fix* as independent GPS samples. The source change is proposed on `noe/portfolio-beacon-cache-sample-dedup`. Pythonista 3/iOS is the intended runtime, not a verified test environment.
+**Current goal:** Require unambiguous standards-conforming JSON for Beacon's opt-in latest-attempt status receipt. Normal generated success/failure receipts remain compatible. [PR #13](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/13) owns the proposed implementation, status, exact checks and decision.
 
-**Integration:** The UK grid-boundary fix [PR #11](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/11) is merged on main at `7d71834b`; cached-fix deduplication is proposed on a separate topic branch and is not yet integrated.
+**Integration:** Cached-fix deduplication [PR #12](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/12) is integrated on main at `287dbb85`; current receipt work is tracked independently in PR #13 rather than described as already merged.
 
-**Validation:** At test-first `d76075ce`, the new cached-fix suite reproduced two failures while the other 42 tests passed on CPython 3.11 and 3.12 ([red branch CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42824387313)). Exact final candidate and main checks must be observed before claiming success.
+**Validation:** Test-first revision `e9acc096` reproduced five strict-receipt assertion failures (three nonstandard-token subcases plus two duplicate-key cases) in 48 tests on each Python 3.11/3.12 CI job; historical tests and the new normal-failure control passed ([observed red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854504221)). See PR #13 for later exact-candidate or merged-main evidence; red tests are not validation of the fix.
 
-**Publication:** Unreleased source maintenance, no verified tag or release. No live GPS, real iPhone/Pythonista, Shortcuts delivery, sensor calibration, or rescue-use proof.
+**Publication:** Source-only maintenance, no newly verified tag or release. Pythonista/iOS, live GPS, Shortcuts, security against local tampering, concurrency and power-loss durability remain unverified.
 
-**Meaningful change:** Polls remain counted, but only unique source-timestamp/coordinate/accuracy tuples count as location samples or toward the three-fix early stop. Distinct readings at new timestamps and revised accuracy at the same timestamp remain eligible; cached duplicates no longer crowd out later fixes. Message schema and saved report formats remain unchanged.
+**Meaningful change:** Contradictory duplicate receipt keys, including digest/status duplicates, and nonstandard JSON constants now return `unknown` instead of silently accepting a last duplicate value or an invalid extra field. The packet/message files, receipt schema and content hashes do not change.
 
-**Next:** Validate the exact topic-branch candidate and its existing tests, then merge if checks and repository protections permit. Do not infer independence or physical accuracy from timestamp uniqueness alone.
+**Next:** Complete exact-source and CI acceptance for PR #13 and merge only if repository requirements permit; then select a different useful milestone. No device validation is required for this bounded source change.
+
+## Strict latest-attempt receipt JSON — decision and acceptance
+
+**Observed predecessor:** `latest_checkin_state()` used permissive `json.load()`. A synthetically edited status receipt containing both `"status":"failed"` and `"status":"success"` returned `success` when the last occurrence matched the stored digest; the same happened with contradictory digest keys. Extra `NaN`, `Infinity` and `-Infinity` constants also yielded `success`, despite violating JSON. Five red assertions were observed at `e9acc096` in both supported CI versions.
+
+**Decision:** Keep the existing simple receipt format, but use a duplicate-key-rejecting `object_pairs_hook` and nonstandard-constant rejection when reading. Alternative last-wins semantics are ambiguous for a consistency marker; rewriting user receipts automatically could destroy forensic evidence. Corrupt or ambiguous evidence returns the existing `unknown` state.
+
+**Acceptance:** Both duplicate-key cases and all three invalid constants fail closed; existing generated success and failure receipts remain accepted; all other synthetic Beacon tests and syntax compilation pass on exact candidate and merged-main Python 3.11/3.12. No personal reports, historical archives or Shortcuts output formats are migrated.
+
+**Limits:** SHA-256 digests do not authenticate the writer, and this is not a secure log against deliberate manipulation by someone who controls both files and receipts. This change does not make multiple latest files an atomic transaction, bound file reads, validate GPS accuracy or certify actual iPhone delivery. Revisit a stronger receipt/transaction format only with a concrete consumer need and compatible migration design.
 
 ## Repeated fresh cached fixes — decision and acceptance
 
