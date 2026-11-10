@@ -2,17 +2,17 @@
 
 ## Development summary
 
-**Current goal:** Require unambiguous standards-conforming JSON for Beacon's opt-in latest-attempt status receipt. Normal generated success/failure receipts remain compatible. [PR #13](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/13) owns the proposed implementation, status, exact checks and decision.
+**Current goal:** Keep Beacon's latest-attempt receipt unambiguous and standards-conforming without breaking generated success/failure records. [PR #13](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/13) is the canonical source for this milestone's integration and exact validation evidence.
 
-**Integration:** Cached-fix deduplication [PR #12](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/12) is integrated on main at `287dbb85`; current receipt work is tracked independently in PR #13 rather than described as already merged.
+**Integration:** Cached-fix deduplication [PR #12](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/12) was integrated on main at `287dbb85`. Receipt parser changes are scoped to PR #13; consult its current merged/open status rather than treating a tested branch as published.
 
-**Validation:** Test-first revision `e9acc096` reproduced five strict-receipt assertion failures (three nonstandard-token subcases plus two duplicate-key cases) in 48 tests on each Python 3.11/3.12 CI job; historical tests and the new normal-failure control passed ([observed red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854504221)). See PR #13 for later exact-candidate or merged-main evidence; red tests are not validation of the fix.
+**Validation:** Test-first `e9acc096` reproduced five strict-receipt failures (three nonstandard-token subcases plus two duplicate-key cases) in 48 tests per Python 3.11/3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854504221)). The complete 48-test suite plus compilation passed on candidate `a8ba39e9` for both versions ([observed branch CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854790555)). This is candidate evidence; PR #13 tracks later validation on other exact revisions, including merged main if applicable.
 
 **Publication:** Source-only maintenance, no newly verified tag or release. Pythonista/iOS, live GPS, Shortcuts, security against local tampering, concurrency and power-loss durability remain unverified.
 
 **Meaningful change:** Contradictory duplicate receipt keys, including digest/status duplicates, and nonstandard JSON constants now return `unknown` instead of silently accepting a last duplicate value or an invalid extra field. The packet/message files, receipt schema and content hashes do not change.
 
-**Next:** Complete exact-source and CI acceptance for PR #13 and merge only if repository requirements permit; then select a different useful milestone. No device validation is required for this bounded source change.
+**Next:** Preserve the PR's revision-specific evidence and select another evidence-led maintenance or creative milestone. Revisit receipt format only if a real reader or durability requirement changes; no device validation is required to substantiate this narrow synthetic parsing result.
 
 ## Strict latest-attempt receipt JSON — decision and acceptance
 
