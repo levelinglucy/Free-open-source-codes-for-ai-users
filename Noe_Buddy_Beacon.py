@@ -657,8 +657,17 @@ def grid_ref_from_e_n(easting, northing, digits=10):
     if easting < 0 or northing < 0 or easting >= 700000 or northing >= 1300000:
         return None
 
-    e100k = int(easting) // 100000
-    n100k = int(northing) // 100000
+    # A 10-digit grid reference reports nearest-metre coordinates. Its
+    # two-letter 100 km square must use the SAME rounded metres as its digits:
+    # otherwise 199999.6 m prints a 00000 offset in the PREVIOUS square,
+    # placing the reported grid reference about 100 km away.
+    metre_e = int(round(easting))
+    metre_n = int(round(northing))
+    # Rounding at the outer edge can leave the supported grid entirely.
+    if metre_e >= 700000 or metre_n >= 1300000:
+        return None
+    e100k = metre_e // 100000
+    n100k = metre_n // 100000
 
     # Letter grid, skipping I.
     l1 = (19 - n100k) - (19 - n100k) % 5 + ((e100k + 10) // 5)
@@ -669,8 +678,8 @@ def grid_ref_from_e_n(easting, northing, digits=10):
 
     letters = letter(l1) + letter(l2)
 
-    rem_e = int(round(easting)) % 100000
-    rem_n = int(round(northing)) % 100000
+    rem_e = metre_e % 100000
+    rem_n = metre_n % 100000
 
     half = digits // 2
     scale = 10 ** (5 - half)
