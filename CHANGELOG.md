@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Distinct fresh GPS fixes
+
+- Count each identical cached iOS fix once, using its source timestamp, coordinates and reported horizontal accuracy; prevent duplicate polls from satisfying the three-fix early stop while preserving updated accuracy and distinct source times. Raw poll counts, output schema, local data and freshness policy stay unchanged. Two synthetic regressions reproduced the predecessor mistake; device behaviour remains unverified. [Decision](./DEV_NOTES.md#repeated-fresh-cached-fixes--decision-and-acceptance).
+
+
 ### UK National Grid square-boundary correctness
 
 - Derive the two-letter 100 km grid square and rounded metre offsets from the same rounded coordinates; previously an easting/northing just below a boundary could print `00000` within the *previous* square, potentially mislocating the grid reference by roughly 100 km. Return no grid reference if rounding exceeds the supported extent; normal integer and non-carry cases are unchanged.

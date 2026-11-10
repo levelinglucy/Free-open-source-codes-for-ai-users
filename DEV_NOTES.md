@@ -2,17 +2,27 @@
 
 ## Development summary
 
-**Current goal:** Keep 1 m UK National Grid references geographically consistent when a rounded easting or northing carries into the next 100 km square. Target: a narrow, backward-compatible source correction in [PR #11](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/11). Intended runtime: Pythonista 3/iOS (not device-tested); synthetic checks on CPython 3.11/3.12.
+**Current goal:** Avoid treating repeated returns of the *same fresh cached location fix* as independent GPS samples. The source change is proposed on `noe/portfolio-beacon-cache-sample-dedup`. Pythonista 3/iOS is the intended runtime, not a verified test environment.
 
-**Integration:** Prior near-antipodal mathematical stability [PR #10](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/10) is merged at `0a475f1c`. PR #11 is proposed; consult the PR for eventual merge status.
+**Integration:** The UK grid-boundary fix [PR #11](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/11) is merged on main at `7d71834b`; cached-fix deduplication is proposed on a separate topic branch and is not yet integrated.
 
-**Validation:** A test-only branch revision `2b24ac0f` reproduced four incorrect grid-boundary cases while other 37 checks passed, on both CPython 3.11 and 3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42807386315)). A code-head revision `3460c3d3` passed 41/41 on both versions ([green CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42807441880)); final candidate and merged-main evidence must be observed separately.
+**Validation:** At test-first `d76075ce`, the new cached-fix suite reproduced two failures while the other 42 tests passed on CPython 3.11 and 3.12 ([red branch CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42824387313)). Exact final candidate and main checks must be observed before claiming success.
 
-**Publication:** Unreleased source maintenance, no verified tag or release. Historical “Tutorial Build 1.1” metadata is not a release. Live GPS/Shortcuts, real device, datum precision, rescue suitability and power-loss durability are not verified.
+**Publication:** Unreleased source maintenance, no verified tag or release. No live GPS, real iPhone/Pythonista, Shortcuts delivery, sensor calibration, or rescue-use proof.
 
-**Meaningful change:** Calculate both two-letter 100 km square and within-square digits from the same rounded metre coordinate. Refuse grid coordinates that round beyond the supported extent. Other location computations, output schema and saved reports are untouched.
+**Meaningful change:** Polls remain counted, but only unique source-timestamp/coordinate/accuracy tuples count as location samples or toward the three-fix early stop. Distinct readings at new timestamps and revised accuracy at the same timestamp remain eligible; cached duplicates no longer crowd out later fixes. Message schema and saved report formats remain unchanged.
 
-**Next:** Check final PR revision and repository gates; merge only if candidate validation and protection permit; do not infer device/rescue verification from synthetic boundary tests.
+**Next:** Validate the exact topic-branch candidate and its existing tests, then merge if checks and repository protections permit. Do not infer independence or physical accuracy from timestamp uniqueness alone.
+
+## Repeated fresh cached fixes — decision and acceptance
+
+**Confirmed predecessor:** `get_location()` can return the same cached fix on consecutive polls even when its source timestamp is still under the 30-second freshness limit. `collect_locations()` counted each return as another sample, potentially stopping early after three identical high-accuracy reads rather than observing later distinct fixes. Synthetic tests reproduced both inflated sample counts and premature early stopping at predecessor `d76075ce`, failing 2/44 tests per CPython version while the historical tests continued to pass.
+
+**Decision:** Track the source timestamp together with latitude, longitude and horizontal accuracy for each accepted fresh fix. Suppress identical repeats; leave the raw poll counter untouched. A changed timestamp is a new reported fix even at identical coordinates, while revised accuracy or coordinates at a fixed timestamp remain eligible. Alternative timestamp-only suppression could discard updated accuracy reports; accepting every recent poll mistakes caching for repeated measurements.
+
+**Acceptance:** Repeated fresh identical readings cannot trigger the three-sample early stop, later distinct readings can be collected, and an unchanged cache counts once when the polling budget expires. Preserve distinct same-timestamp accuracy revisions. Existing freshness, failure behaviour, report schema and local file semantics remain unchanged. Run full synthetic suite and compilation on exact candidate and merged main.
+
+**Limits:** The source timestamp and coordinates are provided by the platform, not independently authenticated. Distinct source times do not prove independent sensors, calibration, accuracy or real-world rescue reliability. No physical device or Shortcuts validation is claimed. This does not add a minimum number of readings required for success: a single fresh fix can still produce a report with its stated uncertainty.
 
 ## Grid-square metre carry — decision and acceptance
 
