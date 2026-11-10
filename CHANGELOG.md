@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### UK National Grid square-boundary correctness
+
+- Derive the two-letter 100 km grid square and rounded metre offsets from the same rounded coordinates; previously an easting/northing just below a boundary could print `00000` within the *previous* square, potentially mislocating the grid reference by roughly 100 km. Return no grid reference if rounding exceeds the supported extent; normal integer and non-carry cases are unchanged.
+- Add four synthetic boundary regressions plus an unchanged control. The underlying GPS estimate, WGS84-to-OSGB36 conversion, message/packet schema and saved personal reports are untouched. This is not survey-grade, device-tested or a guarantee of rescue accuracy. [Decision](./DEV_NOTES.md#grid-square-metre-carry--decision-and-acceptance) · [PR #11](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/11).
+
+
 ### Far-apart GPS reading numerical stability
 
 - Clamp Haversine floating-point rounding to its valid domain so a nearly opposite-point sample cannot crash the rescue estimator before outlier rejection. The synthetic pair previously raised a math-domain exception; nearby distances, message/packet schema and local files remain unchanged. This is not real GPS or device validation.
