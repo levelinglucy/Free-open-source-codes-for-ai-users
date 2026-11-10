@@ -38,7 +38,7 @@ class GridSquareBoundaryTests(unittest.TestCase):
         self.assertEqual(beacon.grid_ref_from_e_n(199999.4, 399999.4), "SG 99999 99999")
         self.assertEqual(
             beacon.grid_ref_from_e_n(250000.0, 350000.0),
-            beacon.grid_ref_from_e_n(250000.0, 350000.0),
+            "SH 50000 50000",
         )
 
 
