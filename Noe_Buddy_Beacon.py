@@ -1439,6 +1439,21 @@ def _sha256_file(path):
     return digest.hexdigest()
 
 
+def _strict_receipt_object(pairs):
+    """Reject ambiguous duplicate JSON keys at every receipt object depth."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate receipt key: {}".format(key))
+        result[key] = value
+    return result
+
+
+def _reject_receipt_constant(token):
+    """JSON has no NaN or Infinity literals, regardless of Python defaults."""
+    raise ValueError("non-JSON numeric constant in receipt: {}".format(token))
+
+
 def latest_checkin_state(folder):
     """Return 'success', 'failed' or 'unknown' for the latest *saved* attempt.
 
@@ -1451,7 +1466,8 @@ def latest_checkin_state(folder):
     try:
         with open(os.path.join(folder, "latest_buddy_beacon_status.json"),
                   "r", encoding="utf-8") as status_file:
-            receipt = json.load(status_file)
+            receipt = json.load(status_file, object_pairs_hook=_strict_receipt_object,
+                                parse_constant=_reject_receipt_constant)
         if not isinstance(receipt, dict) or type(receipt.get("schema_version")) is not int:
             return "unknown"
         if receipt["schema_version"] != 1 or receipt.get("status") not in ("success", "failed"):
