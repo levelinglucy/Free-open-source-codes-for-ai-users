@@ -2,17 +2,27 @@
 
 ## Development summary
 
-**Current goal:** Keep rescue position and uncertainty estimates geographically meaningful when nearby GPS fixes straddle ±180° longitude. Target: small backward-compatible correction in [PR #9](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/9). Intended runtime: Pythonista 3/iOS (not device-tested); synthetic verification: CPython 3.11/3.12.
+**Current goal:** Keep rescue estimation operational when a valid but extremely distant sensor reading makes the Haversine intermediate round just beyond its mathematical domain. Target: one backwards-compatible numerical stability patch with synthetic tests. Intended runtime is Pythonista 3/iOS (unverified), with hosted CPython 3.11/3.12 synthetic checks.
 
-**Integration:** Earlier safety and receipt work, including [PR #8](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/8), is merged at main `5bc62831`. PR #9 is proposed until GitHub confirms its merge.
+**Integration:** Earlier safety work including antimeridian correction PR #9 is merged at main `a1f8a3eb`. This near-antipodal patch is proposed on `noe/portfolio-beacon-antipodal-stability` until merge is observed.
 
-**Validation:** Test-first `c6e368c4` reproduced two distinct antimeridian failures on Python 3.11/3.12 while 31 preceding and control tests passed ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42790125774)). See PR #9 for tested candidate and merged-main revisions when validated; an earlier revision's evidence cannot certify a subsequent revision.
+**Validation:** Test-only commit `a495b11e` failed 2 of 36 tests on *both* Python 3.11 and 3.12 with `ValueError: math domain error`, while the other 34 passed ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42799069035)). Fix and regression tests must pass on the final branch and exact merged main before integration is called validated.
 
-**Publication:** Unreleased maintenance source, no verified tag or release. “Tutorial Build 1.1” is historical program metadata, not a GitHub publication.
+**Publication:** Unreleased maintenance source, no verified release or tag. Historical "Tutorial Build 1.1" metadata is not a GitHub release.
 
-**Meaningful change:** Compute local east/west offsets along the shortest longitude arc and normalize the inverse projection after a dateline crossing. Keep ordinary coordinate geometry, existing message/packet schema, iOS/Shortcuts interface and saved data unchanged.
+**Meaningful change:** Clamp the finite Haversine intermediate into the closed [0, 1] range before the square roots. This prevents a near-antipodal outlier from aborting the entire check-in and lets the existing distance-based outlier rejection do its job. Ordinary positions, packet schema, saving and Shortcuts interface remain unchanged.
 
-**Next steps:** Validate PR #9 on both Python versions; check current main and protection gates before routine low-risk merge; retain local-tangent approximation limits and leave iPhone/real GPS behaviour unverified.
+**Next steps:** Complete hosted regression/compile validation, inspect branch/current main and repository checks, then merge only if required gates pass. Actual device, GPS accuracy, Shortcuts delivery and rescue reliability remain unverified.
+
+## Near-antipodal distance stability — decision and acceptance
+
+**Verified predecessor:** A synthetic pair of valid coordinates close to opposite points on Earth produces a Haversine intermediate of `1.0000000000000002` on hosted Python. Its `sqrt(1-a)` raises a domain error before `robust_fix` can reject the far sensor outlier. Two new tests reproduced the failure independently through `haversine_m` and the real `robust_fix` entry point; a nearby-coordinate control continued passing.
+
+**Alternatives:** Ignore distant fixes without a geodesic distance (requires another trustworthy distance filter); switch the entire estimator to another spherical-distance algorithm (larger regression surface); clamp the Haversine intermediate to its mathematical interval (**chosen**). Valid locations cannot imply a true Haversine `a` outside [0, 1], so clamping floating-point excess is a narrow numerical correction, not an invented geographic observation.
+
+**Acceptance:** For the recorded near-antipodal pair, distance stays finite and within 1 m of a half Earth circumference. The existing `robust_fix` rejects the distant reading, uses the trusted nearer sample and returns a finite small search radius. Existing ordinary-coordinate behaviour and all other synthetic checks continue passing on supported CI versions.
+
+**Limits:** This protects a floating-point corner case; it does not establish actual sensor accuracy, a reliable rescue coverage probability, rejection of every bad reading, real-world iPhone behaviour, or calibration of the 30-second freshness policy. Remote readings can still be genuine; "glitch" here refers to synthetic outlier handling, not a determination of real-world intent or cause.
 
 ## Antimeridian projection — decision and acceptance
 

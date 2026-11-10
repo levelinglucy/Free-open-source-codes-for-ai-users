@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Far-apart GPS reading numerical stability
+
+- Clamp Haversine floating-point rounding to its valid domain so a nearly opposite-point sample cannot crash the rescue estimator before outlier rejection. The synthetic pair previously raised a math-domain exception; nearby distances, message/packet schema and local files remain unchanged. This is not real GPS or device validation.
+
 ### Nearby GPS fixes across the antimeridian
 
 - Use the shortest ±180° longitude arc during local weighted averaging, then return a normalized longitude. Previously, two nearby points separated by the dateline could yield a centre thousands of kilometres away and a grossly inflated rescue radius; no packet format, save history or ordinary non-wrapping location path changes. Synthetic CI is not real-device accuracy proof.

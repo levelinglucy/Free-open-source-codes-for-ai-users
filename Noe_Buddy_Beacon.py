@@ -432,6 +432,10 @@ def haversine_m(lat1, lon1, lat2, lon2):
         math.sin(dp / 2.0) ** 2
         + math.cos(p1) * math.cos(p2) * math.sin(dl / 2.0) ** 2
     )
+    # Finite WGS84 points can round a just above 1 near antipodes.
+    # Clamp the spherical formula's mathematical domain to avoid aborting
+    # an otherwise valid check-in when an outlier is very far away.
+    a = max(0.0, min(1.0, a))
     c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
     return EARTH_RADIUS_M * c
 
