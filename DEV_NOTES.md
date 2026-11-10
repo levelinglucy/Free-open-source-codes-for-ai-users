@@ -2,17 +2,25 @@
 
 ## Development summary
 
-**Current goal:** Keep rescue estimation operational when a valid but extremely distant sensor reading makes the Haversine intermediate round just beyond its mathematical domain. Target: one backwards-compatible numerical stability patch with synthetic tests. Intended runtime is Pythonista 3/iOS (unverified), with hosted CPython 3.11/3.12 synthetic checks.
+**Current goal:** Keep 1 m UK National Grid references geographically consistent when a rounded easting or northing carries into the next 100 km square. Target: a narrow, backward-compatible source correction in [PR #11](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/11). Intended runtime: Pythonista 3/iOS (not device-tested); synthetic checks on CPython 3.11/3.12.
 
-**Integration:** Earlier safety work including antimeridian correction PR #9 is merged at main `a1f8a3eb`. This near-antipodal patch is proposed on `noe/portfolio-beacon-antipodal-stability` until merge is observed.
+**Integration:** Prior near-antipodal mathematical stability [PR #10](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/10) is merged at `0a475f1c`. PR #11 is proposed; consult the PR for eventual merge status.
 
-**Validation:** Test-only commit `a495b11e` failed 2 of 36 tests on *both* Python 3.11 and 3.12 with `ValueError: math domain error`, while the other 34 passed ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42799069035)). Fix and regression tests must pass on the final branch and exact merged main before integration is called validated.
+**Validation:** A test-only branch revision `2b24ac0f` reproduced four incorrect grid-boundary cases while other 37 checks passed, on both CPython 3.11 and 3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42807386315)). A code-head revision `3460c3d3` passed 41/41 on both versions ([green CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42807441880)); final candidate and merged-main evidence must be observed separately.
 
-**Publication:** Unreleased maintenance source, no verified release or tag. Historical "Tutorial Build 1.1" metadata is not a GitHub release.
+**Publication:** Unreleased source maintenance, no verified tag or release. Historical “Tutorial Build 1.1” metadata is not a release. Live GPS/Shortcuts, real device, datum precision, rescue suitability and power-loss durability are not verified.
 
-**Meaningful change:** Clamp the finite Haversine intermediate into the closed [0, 1] range before the square roots. This prevents a near-antipodal outlier from aborting the entire check-in and lets the existing distance-based outlier rejection do its job. Ordinary positions, packet schema, saving and Shortcuts interface remain unchanged.
+**Meaningful change:** Calculate both two-letter 100 km square and within-square digits from the same rounded metre coordinate. Refuse grid coordinates that round beyond the supported extent. Other location computations, output schema and saved reports are untouched.
 
-**Next steps:** Complete hosted regression/compile validation, inspect branch/current main and repository checks, then merge only if required gates pass. Actual device, GPS accuracy, Shortcuts delivery and rescue reliability remain unverified.
+**Next:** Check final PR revision and repository gates; merge only if candidate validation and protection permit; do not infer device/rescue verification from synthetic boundary tests.
+
+## Grid-square metre carry — decision and acceptance
+
+**Verified predecessor:** The formatter calculated the National Grid square from `int(easting) // 100000`, but printed metre offsets from `int(round(easting)) % 100000` (and likewise for northing). For synthetic (199999.6 m, 399999.6 m) it emitted `SG 00000 00000`, even though the rounded coordinates belong to `SC 00000 00000`, a different 100 km square. A rounded carry at the outer supported bounds also yielded a fictitious grid reference. Four new tests failed against the predecessor on both supported CI versions.
+
+**Decision:** Preserve nearest-metre reporting and derive both prefix and offsets from one rounded pair; reject a rounded easting/northing at or beyond the grid extent. Alternative truncation would eliminate the mismatch but change existing nearest-metre semantics; dropping the grid reference entirely on every boundary-adjacent location would discard useful information. The chosen narrow fix retains stable ordinary examples and changes no WGS84→OSGB36 conversion.
+
+**Acceptance:** East-only, north-only, both-axis carries and outer-grid rejection pass; an ordinary non-carry sample remains unchanged; full synthetic tests and compilation pass on exact candidate revisions. The grid reference is auxiliary positioning context: trust reported GPS uncertainty, not implied 1 m position accuracy. This is neither a survey-grade transformation nor physical GPS calibration, and does not certify iPhone, Shortcuts, message delivery or emergency use. [PR #11](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/11) owns exact revision evidence.
 
 ## Near-antipodal distance stability — decision and acceptance
 
