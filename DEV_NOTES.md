@@ -2,17 +2,27 @@
 
 ## Development summary
 
-**Current goal:** Allow consumers of saved reports to distinguish a failed check-in from an older successful latest JSON packet, without deleting that previous evidence. Target: latest-attempt receipt candidate (unreleased). Intended environment: Pythonista 3/iOS (not device-tested); synthetic CI: CPython 3.11/3.12.
+**Current goal:** Keep rescue position and uncertainty estimates geographically meaningful when nearby GPS fixes straddle ±180° longitude. Target: small backward-compatible correction in [PR #9](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/9). Intended runtime: Pythonista 3/iOS (not device-tested); synthetic verification: CPython 3.11/3.12.
 
-**Integration:** PRs #1–7 are merged through `7cfa230b`. [PR #8](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/8) is the authoritative record for whether the receipt code is proposed or merged; branch checks alone do not prove integration.
+**Integration:** Earlier safety and receipt work, including [PR #8](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/8), is merged at main `5bc62831`. PR #9 is proposed until GitHub confirms its merge.
 
-**Validation:** The test-first branch commit `2a8c09d` reproduced three expected missing-receipt errors on each Python 3.11 and 3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42539838512)); the other 27 tests passed, including the new disabled-saving check. [Candidate CI 42539996909](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42539996909) passed 30/30 and compilation per Python 3.11/3.12 at `1b1138bb`; see PR #8 for final revision and merged-main validation.
+**Validation:** Test-first `c6e368c4` reproduced two distinct antimeridian failures on Python 3.11/3.12 while 31 preceding and control tests passed ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42790125774)). See PR #9 for tested candidate and merged-main revisions when validated; an earlier revision's evidence cannot certify a subsequent revision.
 
-**Publication:** No verified tag or release for the maintenance series. The original tutorial build header is not a GitHub release.
+**Publication:** Unreleased maintenance source, no verified tag or release. “Tutorial Build 1.1” is historical program metadata, not a GitHub publication.
 
-**Meaningful change:** After updating the latest message and optionally its successful packet, publish a last-write completion receipt containing only a status and SHA-256 digests of those bytes. Verify both files before returning `success`; a `failed` receipt validates its failure message but makes no assertion about any previously saved JSON. Missing, interrupted or mismatched records return `unknown`.
+**Meaningful change:** Compute local east/west offsets along the shortest longitude arc and normalize the inverse projection after a dateline crossing. Keep ordinary coordinate geometry, existing message/packet schema, iOS/Shortcuts interface and saved data unchanged.
 
-**Next steps:** (1) Confirm PR #8 and exact merged-main CI before reporting integration/validation; (2) revisit true multi-file durability or trusted iPhone evidence only on a concrete need; (3) select another evidence-backed portfolio milestone. No manual device work required.
+**Next steps:** Validate PR #9 on both Python versions; check current main and protection gates before routine low-risk merge; retain local-tangent approximation limits and leave iPhone/real GPS behaviour unverified.
+
+## Antimeridian projection — decision and acceptance
+
+**Verified predecessor:** For two synthetic fixes at +179.9999° and -179.9999° longitude, the old projection used the raw 359.9998° difference even though the locations were about 22 m apart. It averaged their local x positions into a longitude near 0°, roughly 20,015 km from the true dateline location. The rescue radius was correspondingly enormous, producing an unusable check-in. The new regression exercises the existing `robust_fix` path; a separate test checks shortest-arc coordinate round-trip. Both failed before the repair on Python 3.11 and 3.12.
+
+**Alternatives:** Replace the full estimator with global spherical statistics (larger change requiring independent review of weighting and outliers), ignore cross-dateline samples (can lose useful evidence), or correct local x longitude wrapping and inverse normalization (**chosen**). The latter directly fixes the confirmed failure within the existing local-cluster estimator.
+
+**Acceptance:** Both dateline fixes contribute; the estimated position stays within 30 m of 180° and reports a radius below 100 m for the synthetic 15 m-accuracy readings. Shortest-arc x displacement remains below 100 m, inverse output uses a valid longitude, and the ordinary-coordinates control remains unchanged. Full test/compile gates on supported CI Python versions must pass.
+
+**Trade-offs and limits:** The correction affects only nearby clusters across the antimeridian; longitude representation may switch from +180° to -180° at crossings, which denotes the same meridian. The estimator still uses a local tangent approximation, relies on iOS-reported fixes and accuracy, and does not prove physical rescue radius coverage or global geodesic correctness. No actual iPhone, GPS, Shortcuts, SMS, emergency response, concurrency or power-loss test is claimed. Revisit broader geodesic modeling only with observed need and independent accuracy criteria.
 
 ## Latest-attempt receipt — decision and acceptance
 
