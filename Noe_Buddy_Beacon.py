@@ -1423,6 +1423,31 @@ def _replace_latest_complete(path, text):
 
 
 
+def _publish_history_complete(path, text):
+    """Publish a complete archive file without replacing an existing name.
+
+    Write and close a private sibling first; an exclusive same-filesystem
+    hard link exposes the finished bytes in one step. The stage is removed
+    even if writing or linking fails. This protects each file separately,
+    not a text/JSON pair or persistence across power loss.
+    """
+    stage_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=os.path.dirname(path),
+            prefix=".buddy_beacon_history_", suffix=".tmp", delete=False
+        ) as staged:
+            stage_path = staged.name
+            staged.write(text)
+        os.link(stage_path, path)
+    finally:
+        if stage_path is not None:
+            try:
+                os.unlink(stage_path)
+            except FileNotFoundError:
+                pass
+
+
 def _sha256_text(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -1534,13 +1559,11 @@ def save_outputs(message, packet=None):
                 if os.path.lexists(stamped_json):
                     continue
                 try:
-                    with open(stamped_txt, "x", encoding="utf-8") as f:
-                        f.write(message)
+                    _publish_history_complete(stamped_txt, message)
                 except FileExistsError:
                     continue
-                if packet is not None:
-                    with open(stamped_json, "x", encoding="utf-8") as f:
-                        f.write(packet_json)
+                if packet_json is not None:
+                    _publish_history_complete(stamped_json, packet_json)
                 break
             else:
                 raise OSError("No unused timestamped history name available")
