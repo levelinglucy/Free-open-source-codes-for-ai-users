@@ -437,8 +437,14 @@ def haversine_m(lat1, lon1, lat2, lon2):
 
 
 def latlon_to_local_xy(lat, lon, origin_lat, origin_lon):
-    # Good local approximation for small distances.
-    x = math.radians(lon - origin_lon) * EARTH_RADIUS_M * math.cos(math.radians(origin_lat))
+    # Local projection: wrap longitude onto its shortest arc. Near the
+    # antimeridian, +179.999 and -179.999 are neighbours, not 40,000 km apart.
+    delta_lon = lon - origin_lon
+    if delta_lon > 180.0:
+        delta_lon -= 360.0
+    elif delta_lon < -180.0:
+        delta_lon += 360.0
+    x = math.radians(delta_lon) * EARTH_RADIUS_M * math.cos(math.radians(origin_lat))
     y = math.radians(lat - origin_lat) * EARTH_RADIUS_M
     return x, y
 
@@ -446,6 +452,11 @@ def latlon_to_local_xy(lat, lon, origin_lat, origin_lon):
 def local_xy_to_latlon(x, y, origin_lat, origin_lon):
     lat = origin_lat + math.degrees(y / EARTH_RADIUS_M)
     lon = origin_lon + math.degrees(x / (EARTH_RADIUS_M * math.cos(math.radians(origin_lat))))
+    # Return a valid WGS84 longitude after crossing ±180 degrees.
+    if lon > 180.0:
+        lon -= 360.0
+    elif lon < -180.0:
+        lon += 360.0
     return lat, lon
 
 
