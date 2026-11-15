@@ -2,11 +2,19 @@
 
 ## Development summary
 
-**Current candidate:** Correct Beacon's human-readable DMS display when rounding seconds across a minute or degree boundary. The decimal latitude/longitude, geohash, National Grid and saved report fields remain unchanged apart from the optional DMS strings. The targeted review branch is `noe/portfolio-beacon-dms-carry-169`.
+**Current candidate:** Beacon's human-readable check-in now warns when only one GPS sample survives filtering while two or more other valid input samples disagree. Review branch `noe/portfolio-beacon-disagreement-warning-170`. This changes only recipient-visible explanatory text; the estimator, numeric coordinates, radius, packet schema, saved latest/history files and Shortcuts trigger remain untouched.
 
-**Integration:** Reviewable branch only, not merged. **Validation:** A source-native regression test has been committed to the branch; local CPython 3.13.5 isolated calculations reproduced the predecessor's `60.000` seconds and tested the candidate against 40,020 synthetic display cases with no noncanonical fields. That independent reproduction is not a full production import or hosted suite. Hosted [PR-head CI 43667503080](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43667503080) passed **53/53 tests plus source compilation** per Python 3.11 and 3.12 at `83e7c950`; both complete job logs were inspected, including all five new tests. iPhone/Pythonista, physical GPS and Shortcuts remain unverified. These results apply to that exact source/test revision, not any future merge.
+**Integration:** Proposed source in a reviewable branch; not merged. **Validation:** Test-first predecessor commit `a5e8c2fb` failed the new disagreement-warning assertion while three negative controls passed, on both Python 3.11 and 3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43676316843)). Source candidate `49f6097e` passed **57/57 offline synthetic tests plus source compilation** on both versions, with both full logs inspected ([green CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43676369094)). Documentation commits do not transfer that result to any modified source/test revision.
 
-**Release:** No tag, delivered device test or emergency-response validation. **Next:** review required checks and exact branch state before integration, then verify merged-main tests separately if merged. Keep the independent open history-archive PR #14 unchanged.
+**Release:** Unreleased. No live sensor, iPhone/Pythonista, Shortcuts, carrier-delivery or emergency-response validation. **Next:** Review wording and sample-selection tradeoffs before any integration. The older complete-only history PR #14 remains separately draft and untouched.
+
+## GPS disagreement warning — decision and acceptance
+
+**Synthetic observed risk:** `robust_fix()` selects the most confident reported fix as its anchor. A fabricated 1 m-accuracy observation roughly 240 m away from two mutually nearby 12 m-accuracy observations causes it to keep only that first fix and reject the other two. Its estimated 4 m rescue radius then reflects only the one retained observation, not the disagreement. No true position is inferred from this fixture, and actual iOS error frequency is unknown.
+
+**Narrow change:** When `samples_used == 1` and at least two other valid samples were rejected, prepend a plainly worded warning beside the location in the *human message*: the reported radius may not cover the other readings, so independent verification is needed. It does not silently move the position to the majority cluster, inflate or reclassify GPS accuracy, or rewrite any existing reports. Other cases preserve message layout. More aggressive majority-voting or statistical confidence claims would require a separate validated model.
+
+**Acceptance:** A source-native three-reading conflict triggers the warning before DMS, and single, two-reading and three-agreeing controls do not. All historical synthetic tests and syntax compilation pass on both supported hosted Python versions. The warning is a disclosure, not a guarantee that the current fix is wrong or that the rejected samples were correct. The target device, recipient comprehension and delivery have not been tested.
 
 ## DMS second/minute carry — decision and acceptance
 

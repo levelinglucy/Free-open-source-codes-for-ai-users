@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Explicit GPS disagreement warning (candidate)
+
+- If only one valid input fix survives GPS sample filtering and two or more disagreeing samples are rejected, include an early human-readable warning that the stated radius may not cover those readings. Preserve the coordinates, radius calculation, packet schema, existing storage and triggers; do not infer which source measurement is true.
+- Add source-native synthetic conflict and non-conflict regressions. Candidate `49f6097e` passed 57/57 tests and compilation per Python 3.11/3.12 ([CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43676369094)); no physical GPS, iPhone/Shortcuts or message delivery verification. [Decision](./DEV_NOTES.md#gps-disagreement-warning--decision-and-acceptance).
+
+
 ### Canonical human-readable DMS display (candidate)
 
 - Carry third-decimal arcsecond rounding into the next minute/degree instead of emitting `60.000` seconds for near-boundary coordinate values. Preserve directional suffixes, ordinary display examples and all underlying decimal GPS, uncertainty, map and storage fields. This is a **display-only** correction, not a survey-grade accuracy improvement.
