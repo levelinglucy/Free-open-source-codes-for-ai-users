@@ -1296,6 +1296,17 @@ def make_human_message(packet):
     samples_used = q.get("samples_used", "unknown")
     samples_total = q.get("samples_total", "unknown")
 
+    # A narrow radius estimated from one retained fix cannot resolve
+    # substantial disagreement from other valid source readings.
+    rejected_count = q.get("samples_rejected", 0)
+    disagreement_warning = ""
+    if (type(samples_used) is int and samples_used == 1
+            and type(rejected_count) is int and rejected_count >= 2):
+        disagreement_warning = (
+            "GPS disagreement: 2+ other samples were rejected; "
+            "the stated radius may not cover them. Verify location independently.\n"
+        )
+
     return (
         "{name}\n\n"
         "Automatic location check-in prepared on this phone. Trigger and recipient are controlled by Shortcuts.\n\n"
@@ -1305,6 +1316,7 @@ def make_human_message(packet):
         "Lat: {lat:.8f}\n"
         "Lon: {lon:.8f}\n"
         "Search within about ±{radius:.1f} m ({quality})\n"
+        "{disagreement_warning}"
         "DMS: {lat_dms}, {lon_dms}"
         "{grid_line}\n\n"
         "Time:\n"
@@ -1335,6 +1347,7 @@ def make_human_message(packet):
         lon=lon,
         radius=radius,
         quality=quality,
+        disagreement_warning=disagreement_warning,
         lat_dms=f.get("latitude_dms", "unknown"),
         lon_dms=f.get("longitude_dms", "unknown"),
         grid_line=grid_line,
