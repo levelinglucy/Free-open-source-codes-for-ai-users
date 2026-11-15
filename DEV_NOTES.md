@@ -4,9 +4,9 @@
 
 **Current candidate:** Correct Beacon's human-readable DMS display when rounding seconds across a minute or degree boundary. The decimal latitude/longitude, geohash, National Grid and saved report fields remain unchanged apart from the optional DMS strings. The targeted review branch is `noe/portfolio-beacon-dms-carry-169`.
 
-**Integration:** Reviewable branch only, not merged. **Validation:** A source-native regression test has been committed to the branch; local CPython 3.13.5 isolated calculations reproduced the predecessor's `60.000` seconds and tested the candidate against 40,020 synthetic display cases with no noncanonical fields. That independent reproduction is not a full production import or hosted suite. Hosted CI on the exact branch and Pythonista/iPhone remain unverified; do not infer success from a scheduled workflow that never started.
+**Integration:** Reviewable branch only, not merged. **Validation:** A source-native regression test has been committed to the branch; local CPython 3.13.5 isolated calculations reproduced the predecessor's `60.000` seconds and tested the candidate against 40,020 synthetic display cases with no noncanonical fields. That independent reproduction is not a full production import or hosted suite. Hosted [PR-head CI 43667503080](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43667503080) passed **53/53 tests plus source compilation** per Python 3.11 and 3.12 at `83e7c950`; both complete job logs were inspected, including all five new tests. iPhone/Pythonista, physical GPS and Shortcuts remain unverified. These results apply to that exact source/test revision, not any future merge.
 
-**Release:** No tag, delivered device test or emergency-response validation. **Next:** inspect relevant required checks when executable, preserve the source-native test as a future gate, review unrelated branch changes before integration, and keep the independent open history-archive PR #14 unchanged.
+**Release:** No tag, delivered device test or emergency-response validation. **Next:** review required checks and exact branch state before integration, then verify merged-main tests separately if merged. Keep the independent open history-archive PR #14 unchanged.
 
 ## DMS second/minute carry — decision and acceptance
 
