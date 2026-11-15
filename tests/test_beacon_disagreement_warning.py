@@ -66,6 +66,10 @@ class DisagreementWarningTests(unittest.TestCase):
         self.assertIn("GPS disagreement", message)
         self.assertIn("1 other valid reading", message)
         self.assertLess(message.index("GPS disagreement"), message.index("Search within"))
+        # The address is inferred from the same potentially disputed centre.
+        # Warn before presenting it as the nearest readable place.
+        self.assertLess(message.index("GPS disagreement"),
+                        message.index("Nearest readable place/address:"))
 
     def test_two_agreeing_samples_cannot_silence_third_conflict(self):
         fix = beacon.robust_fix([
