@@ -58,11 +58,25 @@ class DisagreementWarningTests(unittest.TestCase):
         self.assertEqual((fix["samples_used"], fix["samples_rejected"]), (1, 0))
         self.assertNotIn("GPS disagreement", beacon.make_human_message(packet_for(fix)))
 
-    def test_two_conflicting_samples_do_not_trigger_majority_warning(self):
+    def test_two_conflicting_samples_warn_even_without_a_majority(self):
         fix = beacon.robust_fix([self.reading(0.00216, 1.0),
                                 self.reading(0.0, 12.0)])
         self.assertEqual((fix["samples_used"], fix["samples_rejected"]), (1, 1))
-        self.assertNotIn("GPS disagreement", beacon.make_human_message(packet_for(fix)))
+        message = beacon.make_human_message(packet_for(fix))
+        self.assertIn("GPS disagreement", message)
+        self.assertIn("1 other valid reading", message)
+        self.assertLess(message.index("GPS disagreement"), message.index("Search within"))
+
+    def test_two_agreeing_samples_cannot_silence_third_conflict(self):
+        fix = beacon.robust_fix([
+            self.reading(0.0, 1.0),
+            self.reading(0.000005, 12.0),
+            self.reading(0.00216, 12.0),
+        ])
+        self.assertEqual((fix["samples_used"], fix["samples_rejected"]), (2, 1))
+        message = beacon.make_human_message(packet_for(fix))
+        self.assertIn("GPS disagreement", message)
+        self.assertLess(message.index("GPS disagreement"), message.index("Lat:"))
 
     def test_agreeing_three_samples_stay_unwarned(self):
         fix = beacon.robust_fix([self.reading(0.0, 12.0),
