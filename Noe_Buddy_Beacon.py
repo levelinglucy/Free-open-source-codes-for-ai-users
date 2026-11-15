@@ -1307,16 +1307,16 @@ def make_human_message(packet):
         disagreement_warning = (
             "GPS disagreement: {} other valid reading{} excluded; "
             "the stated radius may not cover those readings. "
-            "Cross-check another location source if available.\n"
+            "Cross-check another location source if available.\n\n"
         ).format(rejected_count, "" if rejected_count == 1 else "s")
 
     return (
         "{name}\n\n"
         "Automatic location check-in prepared on this phone. Trigger and recipient are controlled by Shortcuts.\n\n"
+        "{disagreement_warning}"
         "Nearest readable place/address:\n"
         "{place}\n\n"
         "Find me / my phone near:\n"
-        "{disagreement_warning}"
         "Lat: {lat:.8f}\n"
         "Lon: {lon:.8f}\n"
         "Search within about ±{radius:.1f} m ({quality})\n"
