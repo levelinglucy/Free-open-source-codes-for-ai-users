@@ -1296,16 +1296,19 @@ def make_human_message(packet):
     samples_used = q.get("samples_used", "unknown")
     samples_total = q.get("samples_total", "unknown")
 
-    # A narrow radius estimated from one retained fix cannot resolve
-    # substantial disagreement from other valid source readings.
+    # The estimator excludes valid fixes that disagree with the highest-
+    # confidence anchor. Even one exclusion can contradict a narrow radius:
+    # neither a 1-vs-1 split nor a 2-vs-1 split establishes which fix is true.
+    # Report this only in human text, without altering numeric location data.
     rejected_count = q.get("samples_rejected", 0)
     disagreement_warning = ""
-    if (type(samples_used) is int and samples_used == 1
-            and type(rejected_count) is int and rejected_count >= 2):
+    if (type(samples_used) is int and samples_used >= 1
+            and type(rejected_count) is int and rejected_count >= 1):
         disagreement_warning = (
-            "GPS disagreement: 2+ other samples were rejected; "
-            "the stated radius may not cover them. Verify location independently.\n"
-        )
+            "GPS disagreement: {} other valid reading{} excluded; "
+            "the stated radius may not cover those readings. "
+            "Cross-check another location source if available.\n"
+        ).format(rejected_count, "" if rejected_count == 1 else "s")
 
     return (
         "{name}\n\n"
@@ -1313,10 +1316,10 @@ def make_human_message(packet):
         "Nearest readable place/address:\n"
         "{place}\n\n"
         "Find me / my phone near:\n"
+        "{disagreement_warning}"
         "Lat: {lat:.8f}\n"
         "Lon: {lon:.8f}\n"
         "Search within about ±{radius:.1f} m ({quality})\n"
-        "{disagreement_warning}"
         "DMS: {lat_dms}, {lon_dms}"
         "{grid_line}\n\n"
         "Time:\n"
