@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Canonical human-readable DMS display (candidate)
+
+- Carry third-decimal arcsecond rounding into the next minute/degree instead of emitting `60.000` seconds for near-boundary coordinate values. Preserve directional suffixes, ordinary display examples and all underlying decimal GPS, uncertainty, map and storage fields. This is a **display-only** correction, not a survey-grade accuracy improvement.
+- Add synthetic source-native rollover and roundtrip regressions; the exact candidate at `83e7c950` passed 53/53 hosted tests plus compilation on Python 3.11 and 3.12 ([CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43667503080)). iPhone/Pythonista and real-device location remain unverified. [Decision](./DEV_NOTES.md#dms-secondminute-carry--decision-and-acceptance).
+
+
 ### Strict latest-attempt receipt evidence
 
 - Reject duplicate keys anywhere in a saved status receipt, and reject nonstandard `NaN`/`Infinity` values instead of accepting an ambiguous receipt as a verified `success` or `failed` check-in. Such records now return `unknown` without rewriting them or previous reports; ordinary receipts and existing output schema are unchanged.

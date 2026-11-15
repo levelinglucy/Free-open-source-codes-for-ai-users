@@ -2,17 +2,19 @@
 
 ## Development summary
 
-**Current goal:** Keep Beacon's latest-attempt receipt unambiguous and standards-conforming without breaking generated success/failure records. [PR #13](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/13) is the canonical source for this milestone's integration and exact validation evidence.
+**Current candidate:** Correct Beacon's human-readable DMS display when rounding seconds across a minute or degree boundary. The decimal latitude/longitude, geohash, National Grid and saved report fields remain unchanged apart from the optional DMS strings. The targeted review branch is `noe/portfolio-beacon-dms-carry-169`.
 
-**Integration:** Cached-fix deduplication [PR #12](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/pull/12) was integrated on main at `287dbb85`. Receipt parser changes are scoped to PR #13; consult its current merged/open status rather than treating a tested branch as published.
+**Integration:** Reviewable branch only, not merged. **Validation:** A source-native regression test has been committed to the branch; local CPython 3.13.5 isolated calculations reproduced the predecessor's `60.000` seconds and tested the candidate against 40,020 synthetic display cases with no noncanonical fields. That independent reproduction is not a full production import or hosted suite. Hosted [PR-head CI 43667503080](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43667503080) passed **53/53 tests plus source compilation** per Python 3.11 and 3.12 at `83e7c950`; both complete job logs were inspected, including all five new tests. iPhone/Pythonista, physical GPS and Shortcuts remain unverified. These results apply to that exact source/test revision, not any future merge.
 
-**Validation:** Test-first `e9acc096` reproduced five strict-receipt failures (three nonstandard-token subcases plus two duplicate-key cases) in 48 tests per Python 3.11/3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854504221)). The complete 48-test suite plus compilation passed on candidate `a8ba39e9` for both versions ([observed branch CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/42854790555)). This is candidate evidence; PR #13 tracks later validation on other exact revisions, including merged main if applicable.
+**Release:** No tag, delivered device test or emergency-response validation. **Next:** review required checks and exact branch state before integration, then verify merged-main tests separately if merged. Keep the independent open history-archive PR #14 unchanged.
 
-**Publication:** Source-only maintenance, no newly verified tag or release. Pythonista/iOS, live GPS, Shortcuts, security against local tampering, concurrency and power-loss durability remain unverified.
+## DMS second/minute carry — decision and acceptance
 
-**Meaningful change:** Contradictory duplicate receipt keys, including digest/status duplicates, and nonstandard JSON constants now return `unknown` instead of silently accepting a last duplicate value or an invalid extra field. The packet/message files, receipt schema and content hashes do not change.
+**Verified source-level defect:** `dms()` split the full-precision angle into integer degrees and minutes before formatting leftover seconds to three decimals. A synthetic 0.99999999° displayed `0°59'60.000" N`; a similar longitude near 180° displayed `179°59'60.000" E`. Seconds of 60 are not canonical degrees/minutes/seconds notation. This is a presentation error, not corruption of the numeric WGS84 fix or proof of a real-world rescue incident.
 
-**Next:** Preserve the PR's revision-specific evidence and select another evidence-led maintenance or creative milestone. Revisit receipt format only if a real reader or durability requirement changes; no device validation is required to substantiate this narrow synthetic parsing result.
+**Narrow repair:** Round the *entire absolute angle once* into integer 0.001-arcsecond units, split with `divmod` into degrees/minutes/seconds, then preserve the original sign-derived N/S/E/W suffix and existing output format. Alternatives were retaining a floating-point seconds carry (multiple boundary conditions) or formatting more decimal places (still can round to sixty). The chosen single integer decomposition keeps both minutes and seconds below 60 in tested values.
+
+**Acceptance and limits:** Synthetic cases cover seconds→minutes and minutes→degrees rollover, negative directions, ±90°/±180° display boundaries, ordinary output controls and roundtrips within 0.000501 arcseconds (a formatter rounding tolerance, not sensor accuracy). The source-native unittest must pass with the full existing suite and syntax compilation before considering main integration. Local source-shaped testing is not a full Pythonista/iOS/Shortcuts execution, and the optional National Grid's separate geographic-coverage limitation remains unresolved. A real-device or recipient interpretation claim is out of scope.
 
 ## Strict latest-attempt receipt JSON — decision and acceptance
 

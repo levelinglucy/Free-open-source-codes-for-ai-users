@@ -500,11 +500,12 @@ def dms(value, is_lat=True):
     else:
         direction = "E" if value >= 0 else "W"
 
-    v = abs(float(value))
-    deg = int(v)
-    minutes_float = (v - deg) * 60.0
-    minutes = int(minutes_float)
-    seconds = (minutes_float - minutes) * 60.0
+    # Round the whole angle at displayed milliarcsecond precision before
+    # splitting it, so 59.9995... seconds carries instead of printing 60.
+    total_millis = int(round(abs(float(value)) * 3600000))
+    deg, remainder = divmod(total_millis, 3600000)
+    minutes, seconds_millis = divmod(remainder, 60000)
+    seconds = seconds_millis / 1000.0
 
     return '{}°{}\'{:.3f}" {}'.format(deg, minutes, seconds, direction)
 
