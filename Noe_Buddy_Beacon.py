@@ -1296,9 +1296,24 @@ def make_human_message(packet):
     samples_used = q.get("samples_used", "unknown")
     samples_total = q.get("samples_total", "unknown")
 
+    # The estimator excludes valid fixes that disagree with the highest-
+    # confidence anchor. Even one exclusion can contradict a narrow radius:
+    # neither a 1-vs-1 split nor a 2-vs-1 split establishes which fix is true.
+    # Report this only in human text, without altering numeric location data.
+    rejected_count = q.get("samples_rejected", 0)
+    disagreement_warning = ""
+    if (type(samples_used) is int and samples_used >= 1
+            and type(rejected_count) is int and rejected_count >= 1):
+        disagreement_warning = (
+            "GPS disagreement: {} other valid reading{} excluded; "
+            "the stated radius may not cover those readings. "
+            "Cross-check another location source if available.\n\n"
+        ).format(rejected_count, "" if rejected_count == 1 else "s")
+
     return (
         "{name}\n\n"
         "Automatic location check-in prepared on this phone. Trigger and recipient are controlled by Shortcuts.\n\n"
+        "{disagreement_warning}"
         "Nearest readable place/address:\n"
         "{place}\n\n"
         "Find me / my phone near:\n"
@@ -1335,6 +1350,7 @@ def make_human_message(packet):
         lon=lon,
         radius=radius,
         quality=quality,
+        disagreement_warning=disagreement_warning,
         lat_dms=f.get("latitude_dms", "unknown"),
         lon_dms=f.get("longitude_dms", "unknown"),
         grid_line=grid_line,
