@@ -4,8 +4,8 @@
 
 ### Explicit GPS disagreement warning (candidate)
 
-- If only one valid input fix survives GPS sample filtering and two or more disagreeing samples are rejected, include an early human-readable warning that the stated radius may not cover those readings. Preserve the coordinates, radius calculation, packet schema, existing storage and triggers; do not infer which source measurement is true.
-- Add source-native synthetic conflict and non-conflict regressions. Candidate `49f6097e` passed 57/57 tests and compilation per Python 3.11/3.12 ([CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43676369094)); no physical GPS, iPhone/Shortcuts or message delivery verification. [Decision](./DEV_NOTES.md#gps-disagreement-warning--decision-and-acceptance).
+- Warn early in human-readable check-ins whenever **at least one otherwise valid GPS reading is excluded for disagreement** with the chosen anchor, including a 1-vs-1 split or two retained versus one excluded. State the excluded count; the search radius may not cover the other readings. Preserve coordinates, numeric radius, packet schema, stored reports and triggers, without assuming which reading is correct.
+- A second review uncovered two false-negative warning cases in the earlier narrow rule. Test-first revision `85d3926e` failed exactly those two cases (58 tests) per Python 3.11/3.12 ([red CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43680922086)); source revision `9981d3d9` passed **58/58 plus compilation** per version ([green CI](https://github.com/levelinglucy/Free-open-source-codes-for-ai-users/actions/runs/43680935903)). Synthetic coverage does not establish iPhone accuracy, delivery reliability, user interpretation or alarm-fatigue frequency. [Decision](./DEV_NOTES.md#gps-disagreement-warning--decision-and-acceptance).
 
 
 ### Canonical human-readable DMS display (candidate)
